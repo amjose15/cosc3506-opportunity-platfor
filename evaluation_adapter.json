@@ -1,0 +1,14 @@
+{
+  "release": "R1-submission",
+  "faculty_discovery": "/api/faculty",
+  "project_discovery": "/api/projects",
+  "faculty_detail": "/api/faculty/{faculty_id}",
+  "project_detail": "/api/projects/{project_id}",
+  "filter_parameters": {
+    "faculty": ["q", "area"],
+    "projects": ["q", "area", "term", "level"]
+  },
+  "public_surface": ["/api/faculty", "/api/projects"],
+  "authenticated_surface": ["/api/me", "/api/faculty/profile", "/api/projects"],
+  "notes": "Update this adapter if deployment routes differ."
+}

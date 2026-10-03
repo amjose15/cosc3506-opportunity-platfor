@@ -1,29 +1,21 @@
-# R1-submission
-
-## Deployed assessed URL
-https://cosc3506-opportunity-platfor.onrender.com
-
-## Release identifier
-R1-submission
-
-## Known issues
-- Test-mode authentication is included in this starter because production email delivery requires instructor approval/configuration.
-- Official `r1_fixture.json` must be loaded before assessment.
-
 ## Fixture loading
-TODO: describe the exact seed/setup command used on the deployed environment.
+
+The official `r1_fixture.json` file is stored in the `data/` directory. The application loads the fixture automatically when the FastAPI application starts. This initializes the required Release 1 research areas, faculty records, projects, and account states.
 
 ## Evaluator accounts
-TODO: provide safe demo accounts for:
-- student
-- verified faculty
-- unverified faculty
-- staff/admin
 
-Do not put passwords or long-lived secrets here.
+The following demo accounts are available for Release 1 evaluation:
+
+* **Student:** `student@algomau.ca`
+* **Verified faculty:** `f-alex@algomau.ca`
+* **Unverified faculty:** `u-pending@algomau.ca`
+* **Staff/Admin:** `admin@algomau.ca`
+
+No passwords or long-lived secrets are required for these demo accounts.
 
 ## Public/private checks
-TODO: record logged-out checks for public faculty/project visibility and authenticated-only visibility.
 
-## R1 journey
-Student can browse faculty, browse projects, filter discovery, inspect faculty/project details, and use normal university email for first contact.
+* Logged-out users can view public faculty profiles and public published projects.
+* Logged-out users cannot view private faculty profiles or authenticated-only projects.
+* Authenticated users can access appropriate private faculty/project information.
+* Unverified faculty are not displayed as verified faculty in discovery.

@@ -4,24 +4,20 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
 from pathlib import Path
 import sqlite3
-
-# --------------------------------------------------
-# BASIC SETUP
-# --------------------------------------------------
+import json
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 DB_FILE = DATA_DIR / "opportunity.db"
+FIXTURE_FILE = DATA_DIR / "r1_fixture.json"
 
 DATA_DIR.mkdir(exist_ok=True)
 
 app = FastAPI(
     title="Opportunity Registry",
-    description="COSC-3506 Project 2 - Release 1",
     version="R1-submission"
 )
 
-# Serve the frontend
 app.mount(
     "/static",
     StaticFiles(directory=str(BASE_DIR / "static")),
@@ -29,167 +25,196 @@ app.mount(
 )
 
 
-# --------------------------------------------------
-# DATABASE
-# --------------------------------------------------
-
 def get_db():
     connection = sqlite3.connect(DB_FILE)
     connection.row_factory = sqlite3.Row
     return connection
 
 
-def initialize_database():
+def create_tables():
 
     connection = get_db()
 
     connection.executescript("""
-    
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT UNIQUE NOT NULL,
-        role TEXT NOT NULL DEFAULT 'student',
-        verified_faculty INTEGER NOT NULL DEFAULT 0,
-        public_profile INTEGER NOT NULL DEFAULT 1
-    );
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            role TEXT NOT NULL DEFAULT 'student',
+            verified_faculty INTEGER NOT NULL DEFAULT 0,
+            public_profile INTEGER NOT NULL DEFAULT 1
+        );
 
-    CREATE TABLE IF NOT EXISTS faculty_profiles (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER UNIQUE NOT NULL,
-        display_name TEXT NOT NULL,
-        description TEXT NOT NULL,
-        areas TEXT NOT NULL,
-        inquiry_preference TEXT NOT NULL,
-        external_link TEXT DEFAULT '',
-        FOREIGN KEY(user_id) REFERENCES users(id)
-    );
+        CREATE TABLE IF NOT EXISTS faculty_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER UNIQUE NOT NULL,
+            fixture_id TEXT,
+            display_name TEXT NOT NULL,
+            description TEXT NOT NULL,
+            areas TEXT NOT NULL,
+            inquiry_preference TEXT NOT NULL,
+            external_link TEXT DEFAULT '',
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        );
 
-    CREATE TABLE IF NOT EXISTS projects (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        owner_id INTEGER NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT NOT NULL,
-        areas TEXT NOT NULL,
-        student_level TEXT DEFAULT '',
-        target_term TEXT DEFAULT '',
-        prerequisite TEXT DEFAULT '',
-        status TEXT NOT NULL DEFAULT 'draft',
-        FOREIGN KEY(owner_id) REFERENCES users(id)
-    );
-
+        CREATE TABLE IF NOT EXISTS projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fixture_id TEXT UNIQUE,
+            owner_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            areas TEXT NOT NULL,
+            student_level TEXT DEFAULT '',
+            target_term TEXT DEFAULT '',
+            prerequisite TEXT DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'draft',
+            expected_public INTEGER NOT NULL DEFAULT 0,
+            expected_authenticated INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY(owner_id) REFERENCES users(id)
+        );
     """)
 
-    # --------------------------------------------------
-    # DEMO USERS
-    # --------------------------------------------------
+    connection.commit()
+    connection.close()
 
-    demo_users = [
-        ("student@algomau.ca", "student", 0),
-        ("faculty@algomau.ca", "faculty", 1),
-        ("admin@algomau.ca", "admin", 0)
-    ]
 
-    for email, role, verified in demo_users:
+def load_fixture():
+
+    if not FIXTURE_FILE.exists():
+        return
+
+    connection = get_db()
+
+    with open(FIXTURE_FILE, "r", encoding="utf-8") as file:
+        fixture = json.load(file)
+
+    for faculty in fixture.get("faculty", []):
+
+        fixture_id = faculty["fixture_id"]
+        email = fixture_id.lower() + "@algomau.ca"
+
+        if faculty["verified_faculty"]:
+            role = "faculty"
+        else:
+            role = "student"
 
         connection.execute(
             """
             INSERT OR IGNORE INTO users
-            (email, role, verified_faculty)
-            VALUES (?, ?, ?)
+            (
+                email,
+                role,
+                verified_faculty,
+                public_profile
+            )
+            VALUES (?, ?, ?, ?)
             """,
-            (email, role, verified)
+            (
+                email,
+                role,
+                1 if faculty["verified_faculty"] else 0,
+                1 if faculty["public_profile"] else 0
+            )
         )
 
-    # --------------------------------------------------
-    # DEMO FACULTY
-    # --------------------------------------------------
+        user = connection.execute(
+            """
+            SELECT id
+            FROM users
+            WHERE email = ?
+            """,
+            (email,)
+        ).fetchone()
 
-    faculty = connection.execute(
-        """
-        SELECT id
-        FROM users
-        WHERE email = ?
-        """,
-        ("faculty@algomau.ca",)
-    ).fetchone()
+        areas = ", ".join(faculty.get("areas", []))
 
-    if faculty:
+        external_links = faculty.get("external_links", [])
+
+        external_link = ""
+
+        if external_links:
+            external_link = external_links[0]
 
         connection.execute(
             """
-            INSERT OR IGNORE INTO faculty_profiles
+            INSERT OR REPLACE INTO faculty_profiles
             (
                 user_id,
+                fixture_id,
                 display_name,
                 description,
                 areas,
                 inquiry_preference,
                 external_link
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                faculty["id"],
-                "Dr. Maya Thomas",
-                "Researcher working with students on practical computing projects.",
-                "Cybersecurity, Software Engineering, Artificial Intelligence",
-                "open",
-                ""
+                user["id"],
+                fixture_id,
+                faculty["display_name"],
+                faculty["bio"],
+                areas,
+                faculty["inquiry_preference"],
+                external_link
             )
         )
 
-        # --------------------------------------------------
-        # DEMO PROJECT
-        # --------------------------------------------------
+    for project in fixture.get("projects", []):
 
-        existing_project = connection.execute(
+        owner = connection.execute(
             """
-            SELECT id
-            FROM projects
-            WHERE owner_id = ?
+            SELECT user_id
+            FROM faculty_profiles
+            WHERE fixture_id = ?
             """,
-            (faculty["id"],)
+            (project["owner"],)
         ).fetchone()
 
-        if not existing_project:
+        if not owner:
+            continue
 
-            connection.execute(
-                """
-                INSERT INTO projects
-                (
-                    owner_id,
-                    title,
-                    description,
-                    areas,
-                    student_level,
-                    target_term,
-                    prerequisite,
-                    status
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    faculty["id"],
-                    "Secure Campus Services",
-                    "Explore security improvements for a small university service.",
-                    "Cybersecurity, Software Engineering",
-                    "Undergraduate",
-                    "Fall 2026",
-                    "Basic programming and an interest in cybersecurity",
-                    "published"
-                )
+        areas = ", ".join(project.get("areas", []))
+
+        connection.execute(
+            """
+            INSERT OR REPLACE INTO projects
+            (
+                fixture_id,
+                owner_id,
+                title,
+                description,
+                areas,
+                student_level,
+                target_term,
+                prerequisite,
+                status,
+                expected_public,
+                expected_authenticated
             )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                project["fixture_id"],
+                owner["user_id"],
+                project["title"],
+                "Current project opportunity.",
+                areas,
+                project["student_level"],
+                project["term"],
+                "",
+                project["status"],
+                1 if project.get("expected_public", False) else 0,
+                1 if project.get("expected_authenticated", False) else 0
+            )
+        )
 
     connection.commit()
     connection.close()
 
 
-initialize_database()
+create_tables()
+load_fixture()
 
-
-# --------------------------------------------------
-# DATA MODELS
-# --------------------------------------------------
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -213,26 +238,17 @@ class ProjectRequest(BaseModel):
     status: str = "draft"
 
 
-# --------------------------------------------------
-# AUTHENTICATION
-# --------------------------------------------------
+def current_user(email):
 
-def get_current_user(
-    demo_email: str | None
-):
-
-    if not demo_email:
-
+    if not email:
         raise HTTPException(
             status_code=401,
-            detail="Please sign in."
+            detail="Sign in required."
         )
 
-    email = demo_email.strip().lower()
+    email = email.lower()
 
-    # R1-02
     if not email.endswith("@algomau.ca"):
-
         raise HTTPException(
             status_code=403,
             detail="Only algomau.ca accounts are allowed."
@@ -252,7 +268,6 @@ def get_current_user(
     connection.close()
 
     if not user:
-
         raise HTTPException(
             status_code=401,
             detail="Account not found."
@@ -261,37 +276,20 @@ def get_current_user(
     return user
 
 
-# --------------------------------------------------
-# HOME PAGE
-# --------------------------------------------------
-
 @app.get("/", response_class=HTMLResponse)
 def home():
 
     html_file = BASE_DIR / "static" / "index.html"
 
-    if not html_file.exists():
+    return html_file.read_text(encoding="utf-8")
 
-        return """
-        <h1>Opportunity Registry</h1>
-        <p>Frontend file not found.</p>
-        """
-
-    return html_file.read_text()
-
-
-# --------------------------------------------------
-# LOGIN
-# --------------------------------------------------
 
 @app.post("/api/login")
 def login(request: LoginRequest):
 
     email = str(request.email).lower()
 
-    # R1-02
     if not email.endswith("@algomau.ca"):
-
         raise HTTPException(
             status_code=403,
             detail="Non-Algoma sign-in rejected."
@@ -308,16 +306,20 @@ def login(request: LoginRequest):
         (email,)
     ).fetchone()
 
-    # New Algoma users start as students.
     if not user:
 
         connection.execute(
             """
             INSERT INTO users
-            (email, role, verified_faculty)
-            VALUES (?, ?, ?)
+            (
+                email,
+                role,
+                verified_faculty,
+                public_profile
+            )
+            VALUES (?, 'student', 0, 1)
             """,
-            (email, "student", 0)
+            (email,)
         )
 
         connection.commit()
@@ -326,38 +328,30 @@ def login(request: LoginRequest):
 
     return {
         "success": True,
-        "message": "Sign-in successful.",
-        "email": email
+        "email": email,
+        "message": "Sign-in successful."
     }
 
 
-# --------------------------------------------------
-# CURRENT USER
-# --------------------------------------------------
-
 @app.get("/api/me")
-def get_me(
+def me(
     x_demo_email: str | None = Header(default=None)
 ):
 
-    user = get_current_user(x_demo_email)
+    user = current_user(x_demo_email)
 
     return dict(user)
 
 
-# --------------------------------------------------
-# FACULTY DISCOVERY
-# --------------------------------------------------
-
 @app.get("/api/faculty")
-def get_faculty(
+def faculty(
     q: str = "",
     area: str = ""
 ):
 
     connection = get_db()
 
-    faculty = connection.execute(
+    rows = connection.execute(
         """
         SELECT
             u.id,
@@ -387,39 +381,31 @@ def get_faculty(
 
     results = []
 
-    for person in faculty:
+    for row in rows:
 
-        person = dict(person)
+        item = dict(row)
 
         search_text = (
-            person["display_name"]
+            item["display_name"]
             + " "
-            + person["description"]
+            + item["description"]
             + " "
-            + person["areas"]
+            + item["areas"]
         ).lower()
 
-        if q:
+        if q and q.lower() not in search_text:
+            continue
 
-            if q.lower() not in search_text:
-                continue
+        if area and area.lower() not in item["areas"].lower():
+            continue
 
-        if area:
-
-            if area.lower() not in person["areas"].lower():
-                continue
-
-        results.append(person)
+        results.append(item)
 
     return results
 
 
-# --------------------------------------------------
-# FACULTY DETAILS
-# --------------------------------------------------
-
 @app.get("/api/faculty/{faculty_id}")
-def faculty_details(
+def faculty_detail(
     faculty_id: int,
     x_demo_email: str | None = Header(default=None)
 ):
@@ -451,18 +437,16 @@ def faculty_details(
     ).fetchone()
 
     if not faculty:
-
         connection.close()
 
         raise HTTPException(
             status_code=404,
-            detail="Faculty member not found."
+            detail="Faculty not found."
         )
 
-    # Private faculty may only be seen by authenticated users.
     if not faculty["public_profile"]:
 
-        get_current_user(x_demo_email)
+        current_user(x_demo_email)
 
     projects = connection.execute(
         """
@@ -479,28 +463,22 @@ def faculty_details(
 
     return {
         "profile": dict(faculty),
-        "projects": [
-            dict(project)
-            for project in projects
-        ]
+        "projects": [dict(x) for x in projects]
     }
 
 
-# --------------------------------------------------
-# PROJECT DISCOVERY
-# --------------------------------------------------
-
 @app.get("/api/projects")
-def get_projects(
+def projects(
     area: str = "",
     term: str = "",
     level: str = "",
-    q: str = ""
+    q: str = "",
+    x_demo_email: str | None = Header(default=None)
 ):
 
     connection = get_db()
 
-    projects = connection.execute(
+    rows = connection.execute(
         """
         SELECT
             pr.*,
@@ -519,59 +497,66 @@ def get_projects(
 
         WHERE
             pr.status = 'published'
-            AND u.public_profile = 1
+            AND (
+                u.public_profile = 1
+                OR pr.expected_authenticated = 1
+            )
 
-        ORDER BY pr.id DESC
+        ORDER BY pr.id
         """
     ).fetchall()
 
     connection.close()
 
+    authenticated = False
+
+    if x_demo_email:
+
+        try:
+            current_user(x_demo_email)
+            authenticated = True
+        except HTTPException:
+            authenticated = False
+
     results = []
 
-    for project in projects:
+    for row in rows:
 
-        project = dict(project)
+        item = dict(row)
+
+        if (
+            item["public_profile"] == 0
+            and not authenticated
+        ):
+            continue
 
         search_text = (
-            project["title"]
+            item["title"]
             + " "
-            + project["description"]
+            + item["description"]
             + " "
-            + project["areas"]
+            + item["areas"]
         ).lower()
 
-        if area:
+        if area and area.lower() not in item["areas"].lower():
+            continue
 
-            if area.lower() not in project["areas"].lower():
-                continue
+        if term and term.lower() != item["target_term"].lower():
+            continue
 
-        if term:
+        if level and level.lower() != item["student_level"].lower():
+            continue
 
-            if term.lower() != project["target_term"].lower():
-                continue
+        if q and q.lower() not in search_text:
+            continue
 
-        if level:
-
-            if level.lower() != project["student_level"].lower():
-                continue
-
-        if q:
-
-            if q.lower() not in search_text:
-                continue
-
-        results.append(project)
+        results.append(item)
 
     return results
 
 
-# --------------------------------------------------
-# PROJECT DETAILS
-# --------------------------------------------------
-
 @app.get("/api/projects/{project_id}")
-def project_details(
+def project_detail(
     project_id: int,
     x_demo_email: str | None = Header(default=None)
 ):
@@ -603,77 +588,59 @@ def project_details(
     connection.close()
 
     if not project:
-
         raise HTTPException(
             status_code=404,
             detail="Project not found."
         )
 
     if project["status"] != "published":
-
         raise HTTPException(
             status_code=404,
             detail="Project not available."
         )
 
-    # Private faculty projects require authentication.
-    if not project["public_profile"]:
-
-        get_current_user(x_demo_email)
+    if project["public_profile"] == 0:
+        current_user(x_demo_email)
 
     return dict(project)
 
 
-# --------------------------------------------------
-# FACULTY PROFILE UPDATE
-# --------------------------------------------------
-
 @app.put("/api/faculty/profile")
-def update_faculty_profile(
+def update_profile(
     request: FacultyProfileRequest,
     x_demo_email: str | None = Header(default=None)
 ):
 
-    user = get_current_user(x_demo_email)
+    user = current_user(x_demo_email)
 
-    # Only verified faculty.
     if user["verified_faculty"] != 1:
-
         raise HTTPException(
             status_code=403,
-            detail="Verified faculty access required."
+            detail="Verified faculty required."
         )
 
     connection = get_db()
 
     connection.execute(
         """
-        INSERT INTO faculty_profiles
-        (
-            user_id,
-            display_name,
-            description,
-            areas,
-            inquiry_preference,
-            external_link
-        )
-        VALUES (?, ?, ?, ?, ?, ?)
+        UPDATE faculty_profiles
 
-        ON CONFLICT(user_id)
-        DO UPDATE SET
-            display_name = excluded.display_name,
-            description = excluded.description,
-            areas = excluded.areas,
-            inquiry_preference = excluded.inquiry_preference,
-            external_link = excluded.external_link
+        SET
+            display_name = ?,
+            description = ?,
+            areas = ?,
+            inquiry_preference = ?,
+            external_link = ?
+
+        WHERE user_id = ?
         """,
         (
-            user["id"],
             request.display_name,
             request.description,
             request.areas,
             request.inquiry_preference,
-            request.external_link
+            request.external_link,
+            user["id"]
         )
     )
 
@@ -681,14 +648,9 @@ def update_faculty_profile(
     connection.close()
 
     return {
-        "success": True,
-        "message": "Faculty profile updated."
+        "success": True
     }
 
-
-# --------------------------------------------------
-# CREATE PROJECT
-# --------------------------------------------------
 
 @app.post("/api/projects")
 def create_project(
@@ -696,17 +658,15 @@ def create_project(
     x_demo_email: str | None = Header(default=None)
 ):
 
-    user = get_current_user(x_demo_email)
+    user = current_user(x_demo_email)
 
     if user["verified_faculty"] != 1:
-
         raise HTTPException(
             status_code=403,
-            detail="Verified faculty access required."
+            detail="Verified faculty required."
         )
 
     if request.status not in ["draft", "published"]:
-
         request.status = "draft"
 
     connection = get_db()
@@ -746,14 +706,9 @@ def create_project(
 
     return {
         "success": True,
-        "project_id": project_id,
-        "status": request.status
+        "project_id": project_id
     }
 
-
-# --------------------------------------------------
-# EDIT PROJECT
-# --------------------------------------------------
 
 @app.patch("/api/projects/{project_id}")
 def edit_project(
@@ -762,13 +717,12 @@ def edit_project(
     x_demo_email: str | None = Header(default=None)
 ):
 
-    user = get_current_user(x_demo_email)
+    user = current_user(x_demo_email)
 
     if user["verified_faculty"] != 1:
-
         raise HTTPException(
             status_code=403,
-            detail="Verified faculty access required."
+            detail="Verified faculty required."
         )
 
     connection = get_db()
@@ -783,7 +737,6 @@ def edit_project(
     ).fetchone()
 
     if not project:
-
         connection.close()
 
         raise HTTPException(
@@ -791,9 +744,7 @@ def edit_project(
             detail="Project not found."
         )
 
-    # R1-16
     if project["owner_id"] != user["id"]:
-
         connection.close()
 
         raise HTTPException(
@@ -832,14 +783,9 @@ def edit_project(
     connection.close()
 
     return {
-        "success": True,
-        "message": "Project updated."
+        "success": True
     }
 
-
-# --------------------------------------------------
-# ADMIN: VERIFY FACULTY
-# --------------------------------------------------
 
 @app.post("/api/admin/verify/{email}")
 def verify_faculty(
@@ -847,22 +793,20 @@ def verify_faculty(
     x_demo_email: str | None = Header(default=None)
 ):
 
-    admin = get_current_user(x_demo_email)
+    admin = current_user(x_demo_email)
 
     if admin["role"] != "admin":
-
         raise HTTPException(
             status_code=403,
-            detail="Administrator access required."
+            detail="Admin access required."
         )
 
     email = email.lower()
 
     if not email.endswith("@algomau.ca"):
-
         raise HTTPException(
             status_code=400,
-            detail="Only Algoma email addresses can be verified."
+            detail="Algoma email required."
         )
 
     connection = get_db()
@@ -884,14 +828,9 @@ def verify_faculty(
     connection.close()
 
     return {
-        "success": True,
-        "message": "Faculty status verified."
+        "success": True
     }
 
-
-# --------------------------------------------------
-# ADMIN: REVOKE FACULTY
-# --------------------------------------------------
 
 @app.post("/api/admin/revoke/{email}")
 def revoke_faculty(
@@ -899,13 +838,12 @@ def revoke_faculty(
     x_demo_email: str | None = Header(default=None)
 ):
 
-    admin = get_current_user(x_demo_email)
+    admin = current_user(x_demo_email)
 
     if admin["role"] != "admin":
-
         raise HTTPException(
             status_code=403,
-            detail="Administrator access required."
+            detail="Admin access required."
         )
 
     connection = get_db()
@@ -927,28 +865,22 @@ def revoke_faculty(
     connection.close()
 
     return {
-        "success": True,
-        "message": "Faculty status revoked."
+        "success": True
     }
 
 
-# --------------------------------------------------
-# CHANGE PUBLIC PROFILE
-# --------------------------------------------------
-
 @app.patch("/api/faculty/public-profile")
-def change_public_profile(
+def public_profile(
     public: bool,
     x_demo_email: str | None = Header(default=None)
 ):
 
-    user = get_current_user(x_demo_email)
+    user = current_user(x_demo_email)
 
     if user["verified_faculty"] != 1:
-
         raise HTTPException(
             status_code=403,
-            detail="Verified faculty access required."
+            detail="Verified faculty required."
         )
 
     connection = get_db()
@@ -961,7 +893,10 @@ def change_public_profile(
 
         WHERE id = ?
         """,
-        (1 if public else 0, user["id"])
+        (
+            1 if public else 0,
+            user["id"]
+        )
     )
 
     connection.commit()
@@ -972,10 +907,6 @@ def change_public_profile(
         "public_profile": public
     }
 
-
-# --------------------------------------------------
-# HEALTH CHECK
-# --------------------------------------------------
 
 @app.get("/api/health")
 def health():

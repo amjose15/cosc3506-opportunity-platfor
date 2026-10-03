@@ -1,0 +1,790 @@
+<!doctype html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Opportunity Registry</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f6f7fb;
+            color: #172033;
+        }
+
+        header {
+            background: #16213e;
+            color: white;
+            padding: 18px;
+        }
+
+        main {
+            max-width: 1050px;
+            margin: auto;
+            padding: 18px;
+        }
+
+        nav button {
+            margin: 4px;
+            padding: 10px;
+            border: 0;
+            border-radius: 7px;
+            cursor: pointer;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 16px;
+            margin: 12px 0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 12px;
+            box-sizing: border-box;
+        }
+
+        button.primary {
+            background: #16213e;
+            color: white;
+            padding: 10px 15px;
+            border: 0;
+            border-radius: 7px;
+        }
+
+        a {
+            color: #174ea6;
+        }
+
+        @media(max-width:390px) {
+            main {
+                padding: 10px;
+            }
+
+            .card {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Opportunity Registry</h1>
+    <div id="status">Not signed in</div>
+</header>
+
+<main>
+
+    <section id="login">
+
+        <h2>Sign in</h2>
+
+        <p>
+            Use an <b>@algomau.ca</b> email.
+        </p>
+
+        <input
+            id="email"
+            type="email"
+            placeholder="student@algomau.ca"
+            aria-label="Algoma email"
+        >
+
+        <button class="primary" onclick="login()">
+            Sign in
+        </button>
+
+        <p id="loginMsg"></p>
+
+    </section>
+
+    <nav id="nav" style="display:none">
+
+        <button onclick="showFaculty()">
+            Browse Faculty
+        </button>
+
+        <button onclick="showProjects()">
+            Browse Projects
+        </button>
+
+        <button onclick="showMy()">
+            My Faculty Tools
+        </button>
+
+    </nav>
+
+    <section id="content"></section>
+
+</main>
+
+<script>
+
+let email = localStorage.getItem("demoEmail") || "";
+
+function headers() {
+    return {
+        "X-Demo-Email": email,
+        "Content-Type": "application/json"
+    };
+}
+
+async function api(url, options = {}) {
+
+    options.headers = {
+        ...(options.headers || {}),
+        ...headers()
+    };
+
+    let response = await fetch(url, options);
+
+    let data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            data.detail || "Request failed"
+        );
+    }
+
+    return data;
+}
+
+
+/* LOGIN */
+
+async function login() {
+
+    try {
+
+        let userEmail =
+            document
+            .getElementById("email")
+            .value
+            .trim()
+            .toLowerCase();
+
+        await api(
+            "/api/login",
+            {
+                method: "POST",
+                body: JSON.stringify({
+                    email: userEmail
+                })
+            }
+        );
+
+        email = userEmail;
+
+        localStorage.setItem(
+            "demoEmail",
+            email
+        );
+
+        document.getElementById(
+            "loginMsg"
+        ).textContent =
+            "Signed in successfully.";
+
+        document.getElementById(
+            "login"
+        ).style.display = "none";
+
+        document.getElementById(
+            "nav"
+        ).style.display = "block";
+
+        let me = await api("/api/me");
+
+        document.getElementById(
+            "status"
+        ).textContent =
+            `Signed in: ${me.email} (${me.role})`;
+
+        showFaculty();
+
+    } catch (error) {
+
+        document.getElementById(
+            "loginMsg"
+        ).textContent =
+            error.message;
+
+    }
+
+}
+
+
+/* FACULTY CARD */
+
+function facultyCard(faculty) {
+
+    return `
+
+        <div class="card">
+
+            <h3>
+                ${faculty.display_name}
+            </h3>
+
+            <p>
+                ${faculty.description}
+            </p>
+
+            <p>
+                <b>Areas:</b>
+                ${faculty.areas}
+            </p>
+
+            <p>
+                <b>Inquiry:</b>
+                ${faculty.inquiry_preference}
+            </p>
+
+            <button
+                class="primary"
+                onclick="detailFaculty(${faculty.id})"
+            >
+                View Faculty
+            </button>
+
+        </div>
+
+    `;
+}
+
+
+/* FACULTY LIST */
+
+async function showFaculty() {
+
+    try {
+
+        let area = prompt(
+            "Research/project area (optional):",
+            ""
+        );
+
+        let query = prompt(
+            "Text search (optional):",
+            ""
+        );
+
+        let data = await api(
+            `/api/faculty?area=${encodeURIComponent(area || "")}&q=${encodeURIComponent(query || "")}`
+        );
+
+        document.getElementById(
+            "content"
+        ).innerHTML = `
+
+            <h2>Faculty</h2>
+
+            <div class="grid">
+
+                ${
+                    data.map(facultyCard).join("")
+                    ||
+                    "<p>No faculty found.</p>"
+                }
+
+            </div>
+
+        `;
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+
+}
+
+
+/* FACULTY DETAILS */
+
+async function detailFaculty(id) {
+
+    try {
+
+        let data =
+            await api("/api/faculty/" + id);
+
+        document.getElementById(
+            "content"
+        ).innerHTML = `
+
+            <div class="card">
+
+                <h2>
+                    ${data.profile.display_name}
+                </h2>
+
+                <p>
+                    ${data.profile.description}
+                </p>
+
+                <p>
+                    <b>Areas:</b>
+                    ${data.profile.areas}
+                </p>
+
+                <p>
+                    <b>Inquiry:</b>
+                    ${data.profile.inquiry_preference}
+                </p>
+
+                <p>
+                    <a href="mailto:${data.profile.email}?subject=Project inquiry">
+                        Contact Faculty by Email
+                    </a>
+                </p>
+
+                <h3>
+                    Current Projects
+                </h3>
+
+                ${
+                    data.projects.map(projectCard).join("")
+                    ||
+                    "<p>No current published projects.</p>"
+                }
+
+            </div>
+
+        `;
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+
+}
+
+
+/* PROJECT CARD */
+
+function projectCard(project) {
+
+    return `
+
+        <div class="card">
+
+            <h3>
+                ${project.title}
+            </h3>
+
+            <p>
+                ${project.description}
+            </p>
+
+            <p>
+                <b>Area:</b>
+                ${project.areas}
+            </p>
+
+            <p>
+                <b>Level:</b>
+                ${project.student_level}
+            </p>
+
+            <p>
+                <b>Term:</b>
+                ${project.target_term}
+            </p>
+
+            <button
+                class="primary"
+                onclick="detailProject(${project.id})"
+            >
+                Project Details
+            </button>
+
+        </div>
+
+    `;
+
+}
+
+
+/* PROJECT LIST */
+
+async function showProjects() {
+
+    try {
+
+        let area = prompt(
+            "Research/project area (optional):",
+            ""
+        );
+
+        let term = prompt(
+            "Target term (optional):",
+            ""
+        );
+
+        let query = prompt(
+            "Text search (optional):",
+            ""
+        );
+
+        let data = await api(
+            `/api/projects?area=${encodeURIComponent(area || "")}&term=${encodeURIComponent(term || "")}&q=${encodeURIComponent(query || "")}`
+        );
+
+        document.getElementById(
+            "content"
+        ).innerHTML = `
+
+            <h2>
+                Current Projects
+            </h2>
+
+            <div class="grid">
+
+                ${
+                    data.map(projectCard).join("")
+                    ||
+                    "<p>No projects found.</p>"
+                }
+
+            </div>
+
+        `;
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+
+}
+
+
+/* PROJECT DETAILS */
+
+async function detailProject(id) {
+
+    try {
+
+        let project =
+            await api("/api/projects/" + id);
+
+        document.getElementById(
+            "content"
+        ).innerHTML = `
+
+            <div class="card">
+
+                <h2>
+                    ${project.title}
+                </h2>
+
+                <p>
+                    ${project.description}
+                </p>
+
+                <p>
+                    <b>Area:</b>
+                    ${project.areas}
+                </p>
+
+                <p>
+                    <b>Student level:</b>
+                    ${project.student_level}
+                </p>
+
+                <p>
+                    <b>Target term:</b>
+                    ${project.target_term}
+                </p>
+
+                <p>
+                    <b>Prerequisite:</b>
+                    ${
+                        project.prerequisite ||
+                        "None listed"
+                    }
+                </p>
+
+                <h3>
+                    Faculty
+                </h3>
+
+                <p>
+                    ${project.display_name}
+                </p>
+
+                <button
+                    class="primary"
+                    onclick="detailFaculty(${project.faculty_id})"
+                >
+                    View Faculty Profile
+                </button>
+
+                <p>
+
+                    <a
+                        href="mailto:${project.email}?subject=Inquiry about ${encodeURIComponent(project.title)}"
+                    >
+                        Contact Faculty
+                    </a>
+
+                </p>
+
+            </div>
+
+        `;
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+
+}
+
+
+/* FACULTY TOOLS */
+
+async function showMy() {
+
+    try {
+
+        let me = await api("/api/me");
+
+        if (me.verified_faculty !== 1) {
+
+            document.getElementById(
+                "content"
+            ).innerHTML = `
+
+                <div class="card">
+
+                    <h2>
+                        Faculty Tools
+                    </h2>
+
+                    <p>
+                        This account is not verified faculty.
+                    </p>
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+        document.getElementById(
+            "content"
+        ).innerHTML = `
+
+            <div class="card">
+
+                <h2>
+                    Faculty Tools
+                </h2>
+
+                <h3>
+                    Update Profile
+                </h3>
+
+                <input
+                    id="dn"
+                    placeholder="Display name"
+                >
+
+                <textarea
+                    id="desc"
+                    placeholder="Research/profile description"
+                ></textarea>
+
+                <input
+                    id="areas"
+                    placeholder="Research areas"
+                >
+
+                <select id="inq">
+
+                    <option value="open">
+                        Open to general student inquiries
+                    </option>
+
+                    <option value="projects">
+                        Projects only
+                    </option>
+
+                    <option value="closed">
+                        Not currently accepting inquiries
+                    </option>
+
+                </select>
+
+                <button
+                    class="primary"
+                    onclick="saveProfile()"
+                >
+                    Save Profile
+                </button>
+
+
+                <h3>
+                    Create Project
+                </h3>
+
+                <input
+                    id="pt"
+                    placeholder="Project title"
+                >
+
+                <textarea
+                    id="pd"
+                    placeholder="Description"
+                ></textarea>
+
+                <input
+                    id="pa"
+                    placeholder="Research/project areas"
+                >
+
+                <input
+                    id="pl"
+                    placeholder="Student level"
+                >
+
+                <input
+                    id="ptm"
+                    placeholder="Target academic term"
+                >
+
+                <input
+                    id="pp"
+                    placeholder="Prerequisite"
+                >
+
+                <select id="ps">
+
+                    <option value="draft">
+                        Draft
+                    </option>
+
+                    <option value="published">
+                        Published
+                    </option>
+
+                </select>
+
+                <button
+                    class="primary"
+                    onclick="createProject()"
+                >
+                    Create Project
+                </button>
+
+            </div>
+
+        `;
+
+    } catch (error) {
+
+        alert(error.message);
+
+    }
+
+}
+
+
+/* SAVE FACULTY PROFILE */
+
+async function saveProfile() {
+
+    await api(
+        "/api/faculty/profile",
+        {
+            method: "PUT",
+
+            body: JSON.stringify({
+
+                display_name:
+                    document.getElementById("dn").value,
+
+                description:
+                    document.getElementById("desc").value,
+
+                areas:
+                    document.getElementById("areas").value,
+
+                inquiry_preference:
+                    document.getElementById("inq").value
+
+            })
+        }
+    );
+
+    alert("Profile saved.");
+
+}
+
+
+/* CREATE PROJECT */
+
+async function createProject() {
+
+    let result =
+        await api(
+            "/api/projects",
+            {
+                method: "POST",
+
+                body: JSON.stringify({
+
+                    title:
+                        document.getElementById("pt").value,
+
+                    description:
+                        document.getElementById("pd").value,
+
+                    areas:
+                        document.getElementById("pa").value,
+
+                    student_level:
+                        document.getElementById("pl").value,
+
+                    target_term:
+                        document.getElementById("ptm").value,
+
+                    prerequisite:
+                        document.getElementById("pp").value,
+
+                    status:
+                        document.getElementById("ps").value
+
+                })
+            }
+        );
+
+    alert(
+        "Project created: " + result.id
+    );
+
+}
+
+</script>
+
+</body>
+</html>

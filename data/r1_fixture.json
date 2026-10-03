@@ -1,0 +1,187 @@
+{
+  "fixture_version": "r1-v1",
+  "research_areas": [
+    "Artificial Intelligence",
+    "Cybersecurity",
+    "Human-Computer Interaction",
+    "Data Science",
+    "Software Engineering"
+  ],
+  "faculty": [
+    {
+      "fixture_id": "F-ALEX",
+      "display_name": "Dr. Alex Morgan",
+      "public_profile": true,
+      "verified_faculty": true,
+      "inquiry_preference": "general",
+      "areas": [
+        "Artificial Intelligence",
+        "Data Science"
+      ],
+      "bio": "Researches practical machine learning systems and trustworthy data-driven applications.",
+      "external_links": [
+        "https://example.org/alex"
+      ],
+      "has_current_projects": true
+    },
+    {
+      "fixture_id": "F-PRIYA",
+      "display_name": "Dr. Priya Shah",
+      "public_profile": true,
+      "verified_faculty": true,
+      "inquiry_preference": "listed-projects-only",
+      "areas": [
+        "Human-Computer Interaction",
+        "Software Engineering"
+      ],
+      "bio": "Works on usable software systems, accessibility, and human-centered development.",
+      "external_links": [],
+      "has_current_projects": true
+    },
+    {
+      "fixture_id": "F-JORDAN",
+      "display_name": "Dr. Jordan Lee",
+      "public_profile": true,
+      "verified_faculty": true,
+      "inquiry_preference": "general",
+      "areas": [
+        "Cybersecurity"
+      ],
+      "bio": "Studies secure software and applied privacy.",
+      "external_links": [
+        "https://example.org/jordan"
+      ],
+      "has_current_projects": false
+    },
+    {
+      "fixture_id": "F-MEI",
+      "display_name": "Dr. Mei Chen",
+      "public_profile": false,
+      "verified_faculty": true,
+      "inquiry_preference": "general",
+      "areas": [
+        "Artificial Intelligence",
+        "Software Engineering"
+      ],
+      "bio": "Works on AI-assisted software engineering.",
+      "external_links": [],
+      "has_current_projects": true
+    },
+    {
+      "fixture_id": "U-PENDING",
+      "display_name": "Taylor Pending",
+      "public_profile": false,
+      "verified_faculty": false,
+      "inquiry_preference": "general",
+      "areas": [
+        "Data Science"
+      ],
+      "bio": "Pending faculty verification fixture.",
+      "external_links": [],
+      "has_current_projects": false
+    }
+  ],
+  "projects": [
+    {
+      "fixture_id": "P-101",
+      "owner": "F-ALEX",
+      "title": "Explainable Models for Community Service Data",
+      "areas": [
+        "Artificial Intelligence",
+        "Data Science"
+      ],
+      "student_level": "Undergraduate or Graduate",
+      "term": "Winter 2027",
+      "status": "published",
+      "expected_public": true
+    },
+    {
+      "fixture_id": "P-102",
+      "owner": "F-ALEX",
+      "title": "Data Quality Monitoring for Small Organizations",
+      "areas": [
+        "Data Science",
+        "Software Engineering"
+      ],
+      "student_level": "Undergraduate",
+      "term": "Winter 2027",
+      "status": "draft",
+      "expected_public": false
+    },
+    {
+      "fixture_id": "P-103",
+      "owner": "F-PRIYA",
+      "title": "Accessible Navigation for Complex Web Forms",
+      "areas": [
+        "Human-Computer Interaction",
+        "Software Engineering"
+      ],
+      "student_level": "Undergraduate",
+      "term": "Winter 2027",
+      "status": "published",
+      "expected_public": true
+    },
+    {
+      "fixture_id": "P-104",
+      "owner": "F-PRIYA",
+      "title": "Mobile Usability Audit Toolkit",
+      "areas": [
+        "Human-Computer Interaction"
+      ],
+      "student_level": "Undergraduate or Graduate",
+      "term": "Spring 2027",
+      "status": "published",
+      "expected_public": true
+    },
+    {
+      "fixture_id": "P-105",
+      "owner": "F-MEI",
+      "title": "AI-Assisted Code Review Evidence",
+      "areas": [
+        "Artificial Intelligence",
+        "Software Engineering"
+      ],
+      "student_level": "Graduate",
+      "term": "Winter 2027",
+      "status": "published",
+      "expected_public": false,
+      "expected_authenticated": true
+    },
+    {
+      "fixture_id": "P-106",
+      "owner": "F-MEI",
+      "title": "Developer-Agent Failure Recovery",
+      "areas": [
+        "Software Engineering"
+      ],
+      "student_level": "Graduate",
+      "term": "Winter 2027",
+      "status": "draft",
+      "expected_public": false
+    },
+    {
+      "fixture_id": "P-107",
+      "owner": "F-ALEX",
+      "title": "Small-Data Model Evaluation",
+      "areas": [
+        "Artificial Intelligence"
+      ],
+      "student_level": "Undergraduate",
+      "term": "Spring 2027",
+      "status": "published",
+      "expected_public": true
+    },
+    {
+      "fixture_id": "P-108",
+      "owner": "F-PRIYA",
+      "title": "Inclusive Error Message Design",
+      "areas": [
+        "Human-Computer Interaction"
+      ],
+      "student_level": "Graduate",
+      "term": "Winter 2027",
+      "status": "withdrawn",
+      "expected_public": false
+    }
+  ]
+}

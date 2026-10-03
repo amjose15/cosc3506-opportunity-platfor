@@ -1,7 +1,7 @@
 # R1-submission
 
 ## Deployed assessed URL
-TODO
+https://cosc3506-opportunity-platfor.onrender.com
 
 ## Release identifier
 R1-submission

@@ -1,14 +1,56 @@
 {
-  "release": "R1-submission",
-  "faculty_discovery": "/api/faculty",
-  "project_discovery": "/api/projects",
-  "faculty_detail": "/api/faculty/{faculty_id}",
-  "project_detail": "/api/projects/{project_id}",
-  "filter_parameters": {
-    "faculty": ["q", "area"],
-    "projects": ["q", "area", "term", "level"]
+  "release": "R2-submission",
+  "release_question": "Can an industry project become student-visible only after a verified faculty member volunteers to supervise it, while faculty coordinate without exclusivity?",
+  "public_intake": {
+    "path": "/",
+    "form": "Submit an Industry Project",
+    "submit_endpoint": "POST /api/intake",
+    "account_required": false,
+    "required_fields": ["organisation_name", "contact_name", "contact_email", "title", "description", "areas", "capacity"]
   },
-  "public_surface": ["/api/faculty", "/api/projects"],
-  "authenticated_surface": ["/api/me", "/api/faculty/profile", "/api/projects"],
-  "notes": "Update this adapter if deployment routes differ."
+  "industry_opportunities": {
+    "faculty_pending_and_supervised_list": "GET /api/industry-opportunities (X-Demo-Email header for faculty view)",
+    "student_or_guest_supervised_list": "GET /api/industry-opportunities",
+    "detail": "GET /api/industry-opportunities/{opportunity_id}",
+    "willingness_add": "POST /api/industry-opportunities/{opportunity_id}/willingness",
+    "willingness_withdraw": "DELETE /api/industry-opportunities/{opportunity_id}/willingness",
+    "engagement_update": "PUT /api/industry-opportunities/{opportunity_id}/engagement",
+    "engagement_states": ["Not contacted", "Discussion underway", "Partner confirmed", "No longer pursuing"]
+  },
+  "subscriptions_and_notifications": {
+    "get_subscriptions": "GET /api/me/subscriptions",
+    "update_subscriptions": "PUT /api/me/subscriptions",
+    "notifications": "GET /api/me/notifications",
+    "delivery": "In-product notification list; open Notifications after signing in as verified faculty."
+  },
+  "release_1_regression": {
+    "faculty_discovery": "GET /api/faculty?q=&area=",
+    "faculty_detail": "GET /api/faculty/{faculty_id}",
+    "project_discovery": "GET /api/projects?q=&area=&term=&level=",
+    "project_detail": "GET /api/projects/{project_id}",
+    "login_demo": "POST /api/login",
+    "current_user": "GET /api/me",
+    "profile_update": "PUT /api/faculty/profile",
+    "public_profile_consent": "PATCH /api/faculty/public-profile?public=true|false",
+    "project_create": "POST /api/projects",
+    "project_update": "PATCH /api/projects/{project_id}",
+    "admin_verify_faculty": "POST /api/admin/verify/{email}",
+    "admin_revoke_faculty": "POST /api/admin/revoke/{email}"
+  },
+  "fixture_loading": {
+    "location": "data/intake_submissions.json and data/faculty_subscriptions.json",
+    "method": "Loaded automatically at application startup after the R1 fixture. Invalid rows missing organisation, contact email, or title are skipped. expected_intake_outcomes.json is acceptance criteria and is not imported as opportunity data."
+  },
+  "demo_accounts": {
+    "student": "student@algomau.ca",
+    "verified_faculty": ["f-alex@algomau.ca", "f-priya@algomau.ca", "f-jordan@algomau.ca", "f-mei@algomau.ca"],
+    "unverified_faculty": "u-pending@algomau.ca",
+    "staff_admin": "admin@algomau.ca"
+  },
+  "notes": [
+    "Partner contact name/email and engagement state/leader are returned only to verified faculty.",
+    "Industry opportunities are hidden from student/guest discovery until at least one verified faculty member records willingness.",
+    "Notifications are in-product; subscriptions never gate browsing.",
+    "The demo sign-in is a course prototype, not production identity verification."
+  ]
 }

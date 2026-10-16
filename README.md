@@ -1,42 +1,35 @@
-# COSC-3506 Project 2 — Release 1 MVP
+# COSC-3506 Project 2 — Release 2
 
-Minimal R1 implementation for Faculty & Project Discovery.
+Opportunity Registry and Pathway Platform: faculty/project discovery plus accountless industry intake, faculty willingness, partner-engagement coordination, and area-based in-product notifications.
 
 ## Stack
 - FastAPI backend
-- SQLite for local development
-- Simple HTML/CSS/JavaScript frontend
-- Seed data compatible with the R1 concept
-- Render-ready via `render.yaml`
+- SQLite storage
+- HTML/CSS/JavaScript frontend
+- Release 1 fixture: `data/r1_fixture.json`
+- Release 2 fixtures: `data/intake_submissions.json`, `data/faculty_subscriptions.json`, and `data/expected_intake_outcomes.json`
 
 ## Run locally
 ```bash
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
-Open http://127.0.0.1:8000
+Open `http://127.0.0.1:8000`.
 
-## R1 test accounts
-This MVP includes a clearly-labelled instructor-approved-test-mode placeholder login flow.
-Replace/extend it with your instructor-approved authentication method before final submission.
+## Demo accounts
+- Student: `student@algomau.ca`
+- Verified faculty: `f-alex@algomau.ca`, `f-priya@algomau.ca`, `f-jordan@algomau.ca`, `f-mei@algomau.ca`
+- Unverified: `u-pending@algomau.ca`
+- Staff/admin: `admin@algomau.ca`
 
-Demo accounts:
-- student@algomau.ca
-- faculty@algomau.ca
-- admin@algomau.ca
+The current sign-in is a course demonstration mode, not production identity verification. Do not use it for real users or sensitive information.
 
-The application enforces the `algomau.ca` domain server-side.
+## Release 2 behaviour
+- Partners can submit without signing in.
+- New submissions remain pending and do not appear in student discovery until verified faculty willingness exists.
+- Verified faculty can volunteer/withdraw, see interest counts and private partner contact details, and record engagement status.
+- Faculty can subscribe to all opportunities, selected areas, or none. Notifications are delivered in the in-product Notifications list.
+- Partner contact details and engagement information are not returned by student/guest opportunity endpoints.
 
-## Important
-The provided Moodle `r1_fixture.json` was not included in the material available while creating this starter.
-Put the official fixture at `data/r1_fixture.json` and run:
-```bash
-python seed_fixture.py
-```
-The seed script accepts common fixture shapes and should be adjusted if the instructor fixture uses different field names.
-
-## Render
-Set the service to use:
-`uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-
-For final R1, use a persistent database (for example Supabase/Postgres) rather than relying on an ephemeral Render filesystem.
+## Release tag and evidence
+Before submission, deploy and test the app, create the immutable `R2-submission` Git tag, and replace the placeholders in `release_submission.md` with the actual deployed URL and full commit SHA. See `evaluation_adapter.json` for the evaluator route/setup map.

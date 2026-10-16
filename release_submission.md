@@ -2,10 +2,9 @@
 
 ## Assessed release
 - **Release tag:** `R2-submission`
-- **Full commit SHA:** Replace this with the full SHA of the commit tagged `R2-submission`.
-- **Deployed URL:** Replace this with the working deployed application URL.
-- **Health check:** `<deployed URL>/api/health` should return `{"status":"ok","release":"R2-submission"}`.
-
+- **Full commit SHA:** `c5740b065a5937e18e6387fff7f3b727b04fe78d`
+- **Deployed URL:** https://cosc3506-opportunity-platfor.onrender.com
+- **Health check:** https://cosc3506-opportunity-platfor.onrender.com/api/health should return `{"status":"ok","release":"R2-submission"}`.
 ## Fixture loading
 The three supplied Project 2 Release 2 fixture files are stored in `data/`:
 - `intake_submissions.json`

@@ -1,0 +1,37 @@
+{
+  "fixture_version": "r2-v1",
+  "accepted_submission_ids": ["S-201", "S-202", "S-203", "S-205", "S-206"],
+  "rejected_submission_ids": ["S-204"],
+  "rejection_reasons": {
+    "S-204": ["organisation is empty", "title is empty"]
+  },
+  "untrusted_content_submission_id": "S-203",
+  "untrusted_content_expectations": [
+    "S-203 is stored as an ordinary pending submission",
+    "its description is rendered as text, never as markup or script",
+    "it is NOT approved, NOT supervised, and NOT student-visible on arrival",
+    "its contact email is not shown publicly despite the text asking for it"
+  ],
+  "student_visible_on_arrival": [],
+  "notified_faculty_by_submission": {
+    "S-201": ["F-PRIYA", "F-JORDAN", "F-ALEX"],
+    "S-202": ["F-ALEX", "F-JORDAN"],
+    "S-203": ["F-PRIYA", "F-JORDAN"],
+    "S-205": ["F-JORDAN"],
+    "S-206": ["F-PRIYA", "F-JORDAN"]
+  },
+  "never_notified_faculty_ids": ["F-MEI"],
+  "same_partner_multiple_submissions": {
+    "Northwind Robotics": ["S-201", "S-206"]
+  },
+  "capacity_spread": {
+    "one-team-only": ["S-201", "S-206"],
+    "multiple-teams": ["S-202", "S-205"],
+    "not-sure": ["S-203"]
+  },
+  "notes": [
+    "F-MEI subscribes to nothing and must never be notified, but must still be able to browse every opportunity (R2-19).",
+    "F-JORDAN subscribes to all and is notified about every accepted submission.",
+    "S-204 is rejected at validation and must not appear in any faculty view (R2-04)."
+  ]
+}

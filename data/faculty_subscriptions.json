@@ -1,0 +1,9 @@
+{
+  "note": "Faculty ids match r1_fixture.json. Subscriptions are private profile settings (R2-17).",
+  "subscriptions": [
+    { "faculty_id": "F-ALEX",  "mode": "areas", "areas": ["Artificial Intelligence", "Data Science"] },
+    { "faculty_id": "F-PRIYA", "mode": "areas", "areas": ["Human-Computer Interaction"] },
+    { "faculty_id": "F-JORDAN","mode": "all",   "areas": [] },
+    { "faculty_id": "F-MEI",   "mode": "none",  "areas": [] }
+  ]
+}

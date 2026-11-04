@@ -1,0 +1,42 @@
+{
+  "fixture_version": "r3-v2",
+  "evaluation_date": "2026-11-06",
+  "note": "Deadlines are fixed dates. Evaluate expiry against evaluation_date, not today.",
+  "opportunities": [
+    { "fixture_id": "O-301", "title": "Warehouse pick-path visualisation", "owner": "F-ALEX",
+      "source": "industry", "term": "2026F", "deadline": "2026-10-15", "state": "open" },
+    { "fixture_id": "O-302", "title": "Anomaly review dashboard", "owner": "F-ALEX",
+      "source": "industry", "term": "2026F", "deadline": "2026-10-20", "state": "open" },
+    { "fixture_id": "O-303", "title": "Accessible museum guide", "owner": "F-PRIYA",
+      "source": "faculty", "term": "2027W", "deadline": "2026-12-15", "state": "open" },
+    { "fixture_id": "O-304", "title": "Sensor calibration record keeper", "owner": "F-JORDAN",
+      "source": "industry", "term": "2026F", "deadline": "2026-09-30", "state": "open" },
+    { "fixture_id": "O-305", "title": "Campus wayfinding study", "owner": "F-PRIYA",
+      "source": "faculty", "term": "2026F", "deadline": "2026-10-01", "state": "withdrawn" },
+    { "fixture_id": "O-306", "title": "Shift handover notes", "owner": "F-JORDAN",
+      "source": "industry", "term": "2026S", "deadline": "2026-05-30", "state": "completed" },
+    { "fixture_id": "O-307", "title": "Archived library navigation pilot", "owner": "F-PRIYA",
+      "source": "faculty", "term": "2026S", "deadline": "2026-05-30", "state": "archived" }
+  ],
+  "matches": [
+    { "fixture_id": "M-401", "opportunity": "O-301", "proposed_by": "F-ALEX",
+      "students": ["S01", "S05"], "confirmed_by": ["S01", "S05"], "state": "confirmed" },
+    { "fixture_id": "M-402", "opportunity": "O-302", "proposed_by": "F-ALEX",
+      "students": ["S08", "S11"], "confirmed_by": ["S08"], "state": "proposed" },
+    { "fixture_id": "M-403", "opportunity": "O-304", "proposed_by": "F-JORDAN",
+      "students": ["S17"], "confirmed_by": [], "state": "declined" },
+    { "fixture_id": "M-404", "opportunity": "O-306", "proposed_by": "F-JORDAN",
+      "students": ["S02"], "confirmed_by": ["S02"], "state": "confirmed" }
+  ],
+  "outcomes": [
+    { "fixture_id": "R-501", "opportunity": "O-306", "summary": "Deployed handover tool now used on two shifts.",
+      "completed": "2026-08-20", "faculty": "F-JORDAN", "students": ["S02"],
+      "faculty_confirmed": true, "links": { "repo": "https://github.com/example/handover" } },
+    { "fixture_id": "R-502", "opportunity": "O-301", "summary": "Draft result awaiting supervisor sign-off.",
+      "completed": "2026-11-01", "faculty": "F-ALEX", "students": ["S01", "S05"],
+      "faculty_confirmed": false, "links": {} },
+    { "fixture_id": "R-503", "opportunity": "O-306", "summary": "Second-term extension of the handover tool.",
+      "completed": "2026-08-25", "faculty": "F-MEI", "students": ["S02"],
+      "faculty_confirmed": true, "links": {} }
+  ]
+}

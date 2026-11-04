@@ -1,12 +1,20 @@
 {
-  "release": "R2-submission",
-  "release_question": "Can an industry project become student-visible only after a verified faculty member volunteers to supervise it, while faculty coordinate without exclusivity?",
+  "release": "R3-submission",
+  "release_question": "Can the platform record two-sided faculty-student intent, manage opportunity term lifecycle, and preserve consent-controlled completed outcomes?",
   "public_intake": {
     "path": "/",
     "form": "Submit an Industry Project",
     "submit_endpoint": "POST /api/intake",
     "account_required": false,
-    "required_fields": ["organisation_name", "contact_name", "contact_email", "title", "description", "areas", "capacity"]
+    "required_fields": [
+      "organisation_name",
+      "contact_name",
+      "contact_email",
+      "title",
+      "description",
+      "areas",
+      "capacity"
+    ]
   },
   "industry_opportunities": {
     "faculty_pending_and_supervised_list": "GET /api/industry-opportunities (X-Demo-Email header for faculty view)",
@@ -15,7 +23,12 @@
     "willingness_add": "POST /api/industry-opportunities/{opportunity_id}/willingness",
     "willingness_withdraw": "DELETE /api/industry-opportunities/{opportunity_id}/willingness",
     "engagement_update": "PUT /api/industry-opportunities/{opportunity_id}/engagement",
-    "engagement_states": ["Not contacted", "Discussion underway", "Partner confirmed", "No longer pursuing"]
+    "engagement_states": [
+      "Not contacted",
+      "Discussion underway",
+      "Partner confirmed",
+      "No longer pursuing"
+    ]
   },
   "subscriptions_and_notifications": {
     "get_subscriptions": "GET /api/me/subscriptions",
@@ -38,19 +51,88 @@
     "admin_revoke_faculty": "POST /api/admin/revoke/{email}"
   },
   "fixture_loading": {
-    "location": "data/intake_submissions.json and data/faculty_subscriptions.json",
-    "method": "Loaded automatically at application startup after the R1 fixture. Invalid rows missing organisation, contact email, or title are skipped. expected_intake_outcomes.json is acceptance criteria and is not imported as opportunity data."
+    "r1_r2_fixtures": "Existing R1/R2 fixture files and intake/subscription data continue to load using the existing startup process.",
+    "r3_fixture": "data/lifecycle_fixture.json",
+    "acceptance_criteria": "data/expected_lifecycle_results.json (read by verify_r3_fixture.py only; not imported as product records)",
+    "method": "Idempotent startup import after additive R3 schema migration. Faculty/student fixture IDs map to synthetic @algomau.ca users; opportunity records map to projects; matches, match_students, outcomes, outcome_students and outcome_consents are populated.",
+    "clock": "The app reads evaluation_date from lifecycle_fixture.json (2026-11-06) via r3_effective_date(); expiry compares deadlines against this simulated date, not the machine date.",
+    "verification": "Run python verify_r3_fixture.py from repository root after app startup."
   },
   "demo_accounts": {
     "student": "student@algomau.ca",
-    "verified_faculty": ["f-alex@algomau.ca", "f-priya@algomau.ca", "f-jordan@algomau.ca", "f-mei@algomau.ca"],
+    "verified_faculty": [
+      "f-alex@algomau.ca",
+      "f-priya@algomau.ca",
+      "f-jordan@algomau.ca",
+      "f-mei@algomau.ca"
+    ],
     "unverified_faculty": "u-pending@algomau.ca",
-    "staff_admin": "admin@algomau.ca"
+    "staff_admin": "admin@algomau.ca",
+    "fixture_students": [
+      "s01@algomau.ca",
+      "s02@algomau.ca",
+      "s05@algomau.ca",
+      "s08@algomau.ca",
+      "s11@algomau.ca",
+      "s17@algomau.ca"
+    ]
   },
   "notes": [
     "Partner contact name/email and engagement state/leader are returned only to verified faculty.",
     "Industry opportunities are hidden from student/guest discovery until at least one verified faculty member records willingness.",
     "Notifications are in-product; subscriptions never gate browsing.",
     "The demo sign-in is a course prototype, not production identity verification."
-  ]
+  ],
+  "matching": {
+    "propose": "POST /api/projects/{project_id}/matches",
+    "student_response": "POST /api/matches/{match_id}/response",
+    "withdraw": "POST /api/matches/{match_id}/withdraw",
+    "participant_status": "GET /api/matches",
+    "states": [
+      "Proposed",
+      "Partly Confirmed",
+      "Confirmed",
+      "Declined",
+      "Withdrawn"
+    ],
+    "note": "Confirmed means intent to work together only; not course registration, eligibility, credit or university approval."
+  },
+  "lifecycle": {
+    "set_authoritative_deadline": "PUT /api/projects/{project_id}/deadline (Center staff/admin only)",
+    "read_state": "GET /api/projects/{project_id}/lifecycle",
+    "change_state": "POST /api/projects/{project_id}/lifecycle",
+    "renew": "POST /api/projects/{project_id}/renew",
+    "states": [
+      "Active",
+      "Expired",
+      "Withdrawn",
+      "Matched",
+      "Completed",
+      "Archived"
+    ],
+    "discovery": "GET /api/projects excludes Expired, Withdrawn, Matched and Archived opportunities.",
+    "evaluation_date": "Read from data/lifecycle_fixture.json; currently 2026-11-06.",
+    "staff_project_inventory": "/api/admin/projects"
+  },
+  "partner_agreement": {
+    "record": "PUT /api/industry-opportunities/{opportunity_id}/partner-agreement",
+    "note": "Faculty-recorded statement of agreement in principle; does not imply partner used the platform."
+  },
+  "outcomes": {
+    "report": "POST /api/projects/{project_id}/outcomes",
+    "faculty_confirmation": "POST /api/outcomes/{outcome_id}/confirm",
+    "participant_consent": "PUT /api/outcomes/{outcome_id}/consent",
+    "student_profile_visibility": "PUT /api/outcomes/{outcome_id}/profile-visibility",
+    "public_showcase": "GET /api/outcomes",
+    "profile_outcomes": "GET /api/profiles/{user_id}/outcomes",
+    "note": "Public display requires faculty confirmation, public faculty profile, and consent from all listed participants. Partner contact details are excluded."
+  },
+  "r3_health": {
+    "path": "/api/r3/health",
+    "expected": {
+      "status": "ok",
+      "release": "R3-submission",
+      "evaluation_date": "2026-11-06"
+    }
+  }
 }

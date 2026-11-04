@@ -1,0 +1,29 @@
+{
+  "fixture_version": "r3-v2",
+  "evaluated_at": "2026-11-06",
+  "expired_opportunity_ids": ["O-302", "O-304"],
+  "expiry_reasons": {
+    "O-302": "deadline 2026-10-20 passed with only a PARTLY confirmed match (S11 never confirmed), and R3-02 requires every named student to confirm",
+    "O-304": "deadline 2026-09-30 passed and its only match was declined"
+  },
+  "past_deadline_but_not_expired": {
+    "O-301": "deadline 2026-10-15 passed, but M-401 is fully confirmed, so it follows the match not the calendar (R3-10)",
+    "O-305": "already withdrawn; withdrawn is a distinct state from expired (R3-11)",
+    "O-306": "already completed; completed is a distinct state from expired (R3-11)",
+    "O-307": "already archived; archived is a distinct state from expired (R3-11)"
+  },
+  "still_open_opportunity_ids": ["O-303"],
+  "fully_confirmed_match_ids": ["M-401", "M-404"],
+  "partly_confirmed_match_ids": ["M-402"],
+  "not_confirmed_match_ids": ["M-403"],
+  "showcase_eligible_outcome_ids": ["R-501"],
+  "participants_only_outcome_ids": ["R-502", "R-503"],
+  "participants_only_reasons": {
+    "R-502": "no participating faculty member has confirmed it (R3-15)",
+    "R-503": "faculty-confirmed, but F-MEI does not permit public profile display, so it must not become a public showcase item (R3-16)"
+  },
+  "notes": [
+    "Discovery after evaluation shows only O-303: everything else is expired, withdrawn, matched, completed or archived (R3-19).",
+    "All five lifecycle states occur in the fixture, so R3-11 is testable."
+  ]
+}

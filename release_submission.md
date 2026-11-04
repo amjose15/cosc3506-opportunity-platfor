@@ -1,34 +1,41 @@
-# Project 2 — Release 2 Submission
+# Project 2 — Release 3 Submission
 
 ## Assessed release
-- **Release tag:** `R2-submission`
-- **Full commit SHA:** `c5740b065a5937e18e6387fff7f3b727b04fe78d`
+- **Release tag:** `R3-submission`
+- **Full commit SHA:** TO BE FILLED AFTER FREEZE
 - **Deployed URL:** https://cosc3506-opportunity-platfor.onrender.com
-- **Health check:** https://cosc3506-opportunity-platfor.onrender.com/api/health should return `{"status":"ok","release":"R2-submission"}`.
-## Fixture loading
-The three supplied Project 2 Release 2 fixture files are stored in `data/`:
-- `intake_submissions.json`
-- `faculty_subscriptions.json`
-- `expected_intake_outcomes.json`
+- **Health check:** `/api/r3/health` should return `status: ok` and `release: R3-submission`.
 
-The app loads valid intake and subscription fixtures at startup after loading the Release 1 fixture. Submissions missing organisation, contact email, or title are skipped. `expected_intake_outcomes.json` is retained as acceptance criteria and is not imported as opportunity data.
+## Fixture loading and clock
+- Both official files are committed under `data/`: `lifecycle_fixture.json` and `expected_lifecycle_results.json`.
+- The application imports `lifecycle_fixture.json` idempotently during startup after the R1/R2 and R3 schema migrations. It maps fixture faculty/student IDs to synthetic `@algomau.ca` accounts, opportunities to existing `projects`, and matches/outcomes to the R3 tables.
+- `expected_lifecycle_results.json` is acceptance criteria only. The application does not import it as product records; `verify_r3_fixture.py` compares the loaded database state against it.
+- The fixture declares `evaluation_date: 2026-11-06`. `r3_effective_date()` reads that value and lifecycle expiry uses it instead of the host clock. `/api/r3/health` reports the simulated date. If the fixture is absent, the app falls back to the server's current date.
+- Re-run fixture verification from the repository root with `python verify_r3_fixture.py` after the application has initialized its SQLite database.
 
 ## Evaluator setup
-Demo-mode accounts use `@algomau.ca` addresses:
-- Student: `student@algomau.ca`
-- Verified faculty: `f-alex@algomau.ca`, `f-priya@algomau.ca`, `f-jordan@algomau.ca`, `f-mei@algomau.ca`
-- Unverified account: `u-pending@algomau.ca`
-- Staff/admin: `admin@algomau.ca`
+Demo accounts:
+- Faculty: `f-alex@algomau.ca`, `f-priya@algomau.ca`, `f-jordan@algomau.ca`, `f-mei@algomau.ca`
+- Fixture students: `s01@algomau.ca`, `s05@algomau.ca`, `s08@algomau.ca`, `s11@algomau.ca`, `s17@algomau.ca` (plus `s02@algomau.ca` for completed-work outcomes).
+- Staff: `admin@algomau.ca`
 
-This is a course demo authentication mode, not production identity verification. No passwords or long-lived secrets are needed for these test accounts.
+The demo authentication mode is not production authentication. Use synthetic test accounts only. Sign-in does not use passwords.
 
-## Notifications
-Notifications are delivered in the in-product **Notifications** list. To observe them, sign in as a verified faculty demo account and open Notifications. The provided subscriptions fixture is loaded at startup. Faculty can edit subscriptions under **Notification Settings**.
+## Required QA setup
+Prepare at least one opportunity in each state: Active, Expired, Withdrawn, Matched, Completed and Archived. Prepare one multi-student proposal where two students confirm independently; one proposal declined; and one withdrawn by faculty. Prepare one outcome confirmed by participating verified faculty with all required public consents, and one outcome awaiting faculty confirmation.
 
-## Key routes
-See `evaluation_adapter.json` for the intake surface, faculty willingness/withdrawal actions, engagement updates, subscription settings, notifications, student discovery, and Release 1 regression routes.
+## Routes
+See `evaluation_adapter.json` for match proposal/response/withdrawal, lifecycle, renewal, partner agreement, outcome reporting/confirmation/consent, public showcase, and profile outcome routes.
 
 ## Known issues / limitations
-- The provided sign-in is a demonstration mechanism; it must be replaced with real institution-backed authentication before production use.
-- SQLite is used for this prototype. Confirm the deployment's database persistence configuration before relying on data across redeployments.
-- Verify the deployed URL, tag, full commit SHA, fixture loading, and all role-based checks before submitting.
+- The demo `X-Demo-Email` identity mechanism is not institution-backed authentication and is suitable only for the course prototype.
+- SQLite is used. Confirm the Render filesystem/database persistence configuration before relying on deployed data across restarts.
+- This prototype uses the existing `X-Demo-Email` identity header and is not production-grade authentication.
+- SQLite remains the application database. Confirm Render disk/persistence configuration before relying on data across restarts.
+- The R3 API workflows are implemented; evaluator workflows can be exercised through the documented API routes. Some administrative lifecycle and outcome operations may require API tooling rather than complete guided frontend forms.
+- Full end-to-end R1/R2 regression testing and deployed QA remain required before claiming all cumulative requirements pass.
+
+## Freeze evidence
+- Tag: `R3-submission`
+- Commit SHA: TO BE FILLED
+- QA issues and fixes: TO BE RECORDED

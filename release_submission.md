@@ -1,5 +1,6 @@
 # Project 2 — Release 3 Submission
-
+- **Declared Project Option:** Registry and Pathway Platform
+- **Repository URL:** https://github.com/amjose15/cosc3506-opportunity-platfor
 ## Assessed release
 - **Release tag:** `R3-submission`
 - **Full commit SHA:** 1c4212d9c7098782864702b112465fa7caea3eb1

@@ -31,8 +31,6 @@ See `evaluation_adapter.json` for match proposal/response/withdrawal, lifecycle,
 ## Known issues / limitations
 - The demo `X-Demo-Email` identity mechanism is not institution-backed authentication and is suitable only for the course prototype.
 - SQLite is used. Confirm the Render filesystem/database persistence configuration before relying on deployed data across restarts.
-- This prototype uses the existing `X-Demo-Email` identity header and is not production-grade authentication.
-- SQLite remains the application database. Confirm Render disk/persistence configuration before relying on data across restarts.
 - The R3 API workflows are implemented; evaluator workflows can be exercised through the documented API routes. Some administrative lifecycle and outcome operations may require API tooling rather than complete guided frontend forms.
 - Full end-to-end R1/R2 regression testing and deployed QA remain required before claiming all cumulative requirements pass.
 

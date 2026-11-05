@@ -1,4 +1,5 @@
 # Project 2 — Release 3 Submission
+- **Team:** team-06
 - **Declared Project Option:** Registry and Pathway Platform
 - **Repository URL:** https://github.com/amjose15/cosc3506-opportunity-platfor
 ## Assessed release
@@ -17,7 +18,7 @@
 ## Evaluator setup
 Demo accounts:
 - Faculty: `f-alex@algomau.ca`, `f-priya@algomau.ca`, `f-jordan@algomau.ca`, `f-mei@algomau.ca`
--  Unverified faculty: `u-pending@algomau.ca`
+  - Unverified faculty: `u-pending@algomau.ca`
 - Fixture students: `s01@algomau.ca`, `s05@algomau.ca`, `s08@algomau.ca`, `s11@algomau.ca`, `s17@algomau.ca` (plus `s02@algomau.ca` for completed-work outcomes).
 - Staff: `admin@algomau.ca`
 

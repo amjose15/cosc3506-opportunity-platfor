@@ -3,7 +3,7 @@
 ## Assessed release
 - **Release tag:** `R3-submission`
 - **Full commit SHA:** TO BE FILLED AFTER FREEZE
-- **Deployed URL:** https://cosc3506-opportunity-platfor.onrender.com
+- **Deployed URL:** https://student-academic-history-api-u1zk.onrender.com
 - **Health check:** `/api/r3/health` should return `status: ok` and `release: R3-submission`.
 
 ## Fixture loading and clock

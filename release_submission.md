@@ -2,7 +2,7 @@
 
 ## Assessed release
 - **Release tag:** `R3-submission`
-- **Full commit SHA:** TO BE FILLED AFTER FREEZE
+- **Full commit SHA:** 1c4212d9c7098782864702b112465fa7caea3eb1
 - **Deployed URL:** https://student-academic-history-api-u1zk.onrender.com
 - **Health check:** `/api/r3/health` should return `status: ok` and `release: R3-submission`.
 
@@ -38,5 +38,5 @@ See `evaluation_adapter.json` for match proposal/response/withdrawal, lifecycle,
 
 ## Freeze evidence
 - Tag: `R3-submission`
-- Commit SHA: TO BE FILLED
+- Commit SHA:1c4212d9c7098782864702b112465fa7caea3eb1
 - QA issues and fixes: TO BE RECORDED

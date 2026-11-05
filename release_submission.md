@@ -35,6 +35,7 @@ See `evaluation_adapter.json` for match proposal/response/withdrawal, lifecycle,
 - Full end-to-end R1/R2 regression testing and deployed QA remain required before claiming all cumulative requirements pass.
 
 ## Freeze evidence
-- Tag: `R3-submission`
-- Commit SHA:1c4212d9c7098782864702b112465fa7caea3eb1
-- QA issues and fixes: TO BE RECORDED
+
+* Tag: `R3-submission`
+* Commit SHA: `1c4212d9c7098782864702b112465fa7caea3eb1`
+* QA issues and fixes: R3 health endpoint returned 200 OK; admin project inventory and matching endpoints returned 200 OK; lifecycle fixture states and outcome eligibility were verified through Swagger.

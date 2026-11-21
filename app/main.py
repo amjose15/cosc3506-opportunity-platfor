@@ -15,7 +15,7 @@ DATA_DIR.mkdir(exist_ok=True)
 
 app = FastAPI(
     title="Opportunity Registry",
-    version="R3-submission"
+    version="R4-submission"
 )
 
 app.mount(
@@ -1281,7 +1281,7 @@ def get_notifications(x_demo_email: str | None = Header(default=None)):
 
 @app.get('/api/health')
 def health():
-    return {'status': 'ok', 'release': 'R3-submission'}
+    return {'status': 'ok', 'release': 'R4-submission'}
 
 
 # Initialise R2 storage after the R1 schema and fixture have been loaded.
@@ -1829,7 +1829,7 @@ def r3_admin_projects(x_demo_email: str | None = Header(default=None)):
 
 @app.get('/api/r3/health')
 def r3_health():
-    return {"status": "ok", "release": "R3-submission", "evaluation_date": str(r3_effective_date())}
+    return {"status": "ok", "release": "R4-submission", "evaluation_date": str(r3_effective_date())}
 
 
 # Initialise R3 additive schema after R1/R2 initialization.
@@ -1974,3 +1974,197 @@ def r3_profile_outcomes(user_id: int, x_demo_email: str | None = Header(default=
         results.append(item)
     connection.close()
     return results
+
+# ---------------- Release 4: external opportunities and synchronization ----------------
+from datetime import datetime, timezone
+
+R4_V1_FILE = DATA_DIR / "external_source_feed_v1.json"
+R4_V2_FILE = DATA_DIR / "external_source_feed_v2.json"
+
+
+def r4_create_tables():
+    con = get_db()
+    con.executescript("""
+    CREATE TABLE IF NOT EXISTS external_opportunities (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        source_id TEXT NOT NULL, source_name TEXT NOT NULL, external_id TEXT NOT NULL,
+        title TEXT NOT NULL, description TEXT NOT NULL, areas_json TEXT NOT NULL DEFAULT '[]',
+        authoritative_url TEXT NOT NULL, closes TEXT NOT NULL DEFAULT '',
+        source_status TEXT NOT NULL DEFAULT 'active', last_seen_sync TEXT NOT NULL DEFAULT '',
+        last_changed_at TEXT NOT NULL DEFAULT '', local_student_association TEXT NOT NULL DEFAULT '[]',
+        local_outcome_history TEXT NOT NULL DEFAULT '[]', local_readiness_guidance TEXT NOT NULL DEFAULT '',
+        UNIQUE(source_id, external_id)
+    );
+    CREATE TABLE IF NOT EXISTS external_faculty_interest (
+        external_opportunity_id INTEGER NOT NULL, faculty_user_id INTEGER NOT NULL,
+        note TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY(external_opportunity_id, faculty_user_id)
+    );
+    CREATE TABLE IF NOT EXISTS external_change_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, external_opportunity_id INTEGER NOT NULL,
+        changed_fields_json TEXT NOT NULL, detected_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS external_sync_runs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, source_id TEXT NOT NULL, started_at TEXT NOT NULL,
+        completed_at TEXT NOT NULL DEFAULT '', status TEXT NOT NULL, reason TEXT NOT NULL DEFAULT '',
+        new_count INTEGER NOT NULL DEFAULT 0, unchanged_count INTEGER NOT NULL DEFAULT 0,
+        changed_count INTEGER NOT NULL DEFAULT 0, not_seen_count INTEGER NOT NULL DEFAULT 0,
+        malformed_count INTEGER NOT NULL DEFAULT 0
+    );
+    """)
+    con.commit(); con.close()
+
+
+def r4_require_operator(email):
+    user = current_user(email)
+    if user['role'] not in ('admin', 'operator'):
+        raise HTTPException(status_code=403, detail='Operator role required.')
+    return user
+
+
+def r4_require_verified_faculty(email):
+    user = current_user(email)
+    if user['role'] != 'faculty' or not user['verified_faculty']:
+        raise HTTPException(status_code=403, detail='Verified faculty role required.')
+    return user
+
+
+def r4_sync_feed(feed):
+    if not isinstance(feed, dict) or not isinstance(feed.get('records'), list):
+        raise ValueError('Feed must contain a records array.')
+    source_id = str(feed.get('source_id') or '').strip()
+    source_name = str(feed.get('source_name') or source_id).strip()
+    synced_at = str(feed.get('synced_at') or datetime.now(timezone.utc).isoformat())
+    if not source_id:
+        raise ValueError('Feed is missing source_id.')
+    valid, malformed = [], []
+    for index, raw in enumerate(feed['records']):
+        try:
+            if not isinstance(raw, dict): raise ValueError('record is not an object')
+            external_id = str(raw.get('external_id') or '').strip()
+            title = str(raw.get('title') or '').strip()
+            closes = str(raw.get('closes') or '').strip()
+            url = str(raw.get('authoritative_url') or '').strip()
+            problems=[]
+            if not external_id: problems.append('empty external_id')
+            if not title: problems.append('empty title')
+            if not url: problems.append('empty authoritative_url')
+            try: date.fromisoformat(closes)
+            except Exception: problems.append('unparseable closes date')
+            if problems: raise ValueError('; '.join(problems))
+            areas = raw.get('areas', [])
+            if not isinstance(areas, list): raise ValueError('areas must be a list')
+            valid.append({'external_id':external_id,'title':title,'description':str(raw.get('description') or ''),
+                          'areas':[str(a) for a in areas],'authoritative_url':url,'closes':closes})
+        except Exception as exc:
+            malformed.append({'index':index,'reason':str(exc)})
+    con = get_db(); started = datetime.now(timezone.utc).isoformat()
+    try:
+        con.execute('BEGIN IMMEDIATE')
+        seen = set(); counts = {'new':0,'unchanged':0,'changed':0,'not_seen':0}
+        for item in valid:
+            extid=item['external_id']; seen.add(extid)
+            old=con.execute('SELECT * FROM external_opportunities WHERE source_id=? AND external_id=?',(source_id,extid)).fetchone()
+            fields={'title':item['title'],'description':item['description'],'areas_json':json.dumps(item['areas'],ensure_ascii=False),
+                    'authoritative_url':item['authoritative_url'],'closes':item['closes']}
+            if old is None:
+                con.execute('''INSERT INTO external_opportunities
+                (source_id,source_name,external_id,title,description,areas_json,authoritative_url,closes,source_status,last_seen_sync,last_changed_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)''', (source_id,source_name,extid,fields['title'],fields['description'],fields['areas_json'],fields['authoritative_url'],fields['closes'],'active',synced_at,synced_at))
+                counts['new']+=1
+            else:
+                changed=[('areas' if k=='areas_json' else k) for k,v in fields.items() if old[k]!=v]
+                if changed:
+                    con.execute('''UPDATE external_opportunities SET source_name=?,title=?,description=?,areas_json=?,authoritative_url=?,closes=?,source_status='active',last_seen_sync=?,last_changed_at=? WHERE id=?''',
+                    (source_name,fields['title'],fields['description'],fields['areas_json'],fields['authoritative_url'],fields['closes'],synced_at,synced_at,old['id']))
+                    con.execute('INSERT INTO external_change_log (external_opportunity_id,changed_fields_json) VALUES (?,?)',(old['id'],json.dumps(changed)))
+                    counts['changed']+=1
+                else:
+                    con.execute("UPDATE external_opportunities SET source_name=?,source_status='active',last_seen_sync=? WHERE id=?",(source_name,synced_at,old['id']))
+                    counts['unchanged']+=1
+        for row in con.execute('SELECT id,external_id,source_status FROM external_opportunities WHERE source_id=?',(source_id,)).fetchall():
+            if row['external_id'] not in seen:
+                if row['source_status']!='not_seen': con.execute("UPDATE external_opportunities SET source_status='not_seen' WHERE id=?",(row['id'],))
+                counts['not_seen']+=1
+        completed=datetime.now(timezone.utc).isoformat()
+        con.execute('''INSERT INTO external_sync_runs (source_id,started_at,completed_at,status,new_count,unchanged_count,changed_count,not_seen_count,malformed_count)
+                       VALUES (?,?,?,?,?,?,?,?,?)''',(source_id,started,completed,'success',counts['new'],counts['unchanged'],counts['changed'],counts['not_seen'],len(malformed)))
+        con.commit()
+        return {'status':'success','source_id':source_id,'source_name':source_name,'synced_at':synced_at,'classifications':counts,'malformed_records':malformed,'malformed_count':len(malformed)}
+    except Exception:
+        con.rollback(); raise
+    finally: con.close()
+
+
+r4_create_tables()
+
+
+@app.get('/api/external-opportunities')
+def r4_list_external_opportunities(x_demo_email: str | None = Header(default=None)):
+    con=get_db(); rows=con.execute('SELECT * FROM external_opportunities ORDER BY id DESC').fetchall(); result=[]
+    user=None
+    if x_demo_email:
+        try: user=current_user(x_demo_email)
+        except HTTPException: pass
+    for row in rows:
+        item=dict(row); item['areas']=json.loads(item.pop('areas_json')); item['externally_owned']=True
+        item['source_label']=item['source_name']; item['apply_action']='View / apply through provider'
+        item['faculty_interest_count']=con.execute('SELECT COUNT(*) FROM external_faculty_interest WHERE external_opportunity_id=?',(row['id'],)).fetchone()[0]
+        latest=con.execute("SELECT completed_at FROM external_sync_runs WHERE status='success' ORDER BY id DESC LIMIT 1").fetchone()
+        item['last_successful_sync']=latest['completed_at'] if latest else None
+        item['freshness']='not yet synchronized' if not latest else ('stale' if (datetime.now(timezone.utc)-datetime.fromisoformat(latest['completed_at'])).days > 7 else 'recent')
+        item['readiness_guidance']='Readiness is guidance only and never blocks viewing or applying. Review your confirmed completed-work experience with faculty.'
+        item['faculty_interested']=bool(user and user['role']=='faculty' and con.execute('SELECT 1 FROM external_faculty_interest WHERE external_opportunity_id=? AND faculty_user_id=?',(row['id'],user['id'])).fetchone())
+        result.append(item)
+    con.close(); return {'opportunities':result}
+
+
+@app.post('/api/admin/external-sync')
+def r4_trigger_sync(payload: dict, x_demo_email: str | None = Header(default=None)):
+    r4_require_operator(x_demo_email)
+    name=str(payload.get('feed') or '').lower(); paths={'v1':R4_V1_FILE,'v2':R4_V2_FILE}
+    if name not in paths: raise HTTPException(status_code=400,detail="feed must be 'v1' or 'v2'")
+    try: return r4_sync_feed(json.loads(paths[name].read_text(encoding='utf-8')))
+    except (OSError,json.JSONDecodeError,ValueError) as exc:
+        con=get_db(); now=datetime.now(timezone.utc).isoformat()
+        con.execute('INSERT INTO external_sync_runs (source_id,started_at,completed_at,status,reason) VALUES (?,?,?,?,?)',('mitacs-demo',now,now,'failed',str(exc)))
+        con.commit(); con.close(); raise HTTPException(status_code=400,detail=f'Sync failed; previous data retained: {exc}')
+
+
+@app.post('/api/admin/external-sync/fail')
+def r4_simulate_failed_sync(payload: dict, x_demo_email: str | None = Header(default=None)):
+    r4_require_operator(x_demo_email); reason=str(payload.get('reason') or 'Simulated source unavailable'); now=datetime.now(timezone.utc).isoformat()
+    con=get_db(); con.execute('INSERT INTO external_sync_runs (source_id,started_at,completed_at,status,reason) VALUES (?,?,?,?,?)',('mitacs-demo',now,now,'failed',reason)); con.commit(); con.close()
+    return {'status':'failed','reason':reason,'data_changed':False}
+
+
+@app.get('/api/admin/external-sync/health')
+def r4_sync_health(x_demo_email: str | None = Header(default=None)):
+    r4_require_operator(x_demo_email); con=get_db()
+    success=con.execute("SELECT * FROM external_sync_runs WHERE status='success' ORDER BY id DESC LIMIT 1").fetchone()
+    failure=con.execute("SELECT * FROM external_sync_runs WHERE status='failed' ORDER BY id DESC LIMIT 1").fetchone(); con.close()
+    return {'last_successful_run':dict(success) if success else None,'last_failure':dict(failure) if failure else None}
+
+
+@app.post('/api/external-opportunities/{opportunity_id}/interest')
+def r4_record_interest(opportunity_id: int, payload: dict, x_demo_email: str | None = Header(default=None)):
+    user=r4_require_verified_faculty(x_demo_email); note=str(payload.get('note') or '')[:1000]; con=get_db()
+    if not con.execute('SELECT id FROM external_opportunities WHERE id=?',(opportunity_id,)).fetchone(): con.close(); raise HTTPException(status_code=404,detail='External opportunity not found.')
+    con.execute('INSERT OR IGNORE INTO external_faculty_interest (external_opportunity_id,faculty_user_id,note) VALUES (?,?,?)',(opportunity_id,user['id'],note)); con.commit(); con.close()
+    return {'success':True,'message':'Recorded as local faculty support, not provider endorsement.'}
+
+
+@app.delete('/api/external-opportunities/{opportunity_id}/interest')
+def r4_withdraw_interest(opportunity_id: int, x_demo_email: str | None = Header(default=None)):
+    user=r4_require_verified_faculty(x_demo_email); con=get_db(); con.execute('DELETE FROM external_faculty_interest WHERE external_opportunity_id=? AND faculty_user_id=?',(opportunity_id,user['id'])); con.commit(); con.close(); return {'success':True}
+
+
+@app.get('/api/external-opportunities/{opportunity_id}/changes')
+def r4_external_changes(opportunity_id: int, x_demo_email: str | None = Header(default=None)):
+    current_user(x_demo_email); con=get_db(); rows=con.execute('SELECT changed_fields_json,detected_at FROM external_change_log WHERE external_opportunity_id=? ORDER BY id DESC',(opportunity_id,)).fetchall(); con.close()
+    return {'changes':[{'fields':json.loads(r['changed_fields_json']),'detected_at':r['detected_at']} for r in rows]}
+
+
+@app.get('/api/r4/health')
+def r4_health():
+    return {'status':'ok','release':'R4-submission'}

@@ -1,0 +1,39 @@
+{
+  "source_id": "mitacs-demo",
+  "source_name": "Mitacs (synthetic demonstration feed)",
+  "synced_at": "2026-11-13",
+  "records": [
+    {
+      "external_id": "MX-1001",
+      "title": "Accelerate internship — applied machine learning",
+      "description": "Twelve-week funded internship with an industry host on applied ML.",
+      "areas": ["Artificial Intelligence", "Data Science"],
+      "authoritative_url": "https://mitacs.example/opportunities/MX-1001",
+      "closes": "2027-02-28"
+    },
+    {
+      "external_id": "MX-1002",
+      "title": "Accelerate internship — secure systems review",
+      "description": "Funded internship reviewing deployment security for a regional host.",
+      "areas": ["Cybersecurity"],
+      "authoritative_url": "https://mitacs.example/opportunities/MX-1002",
+      "closes": "2027-01-31"
+    },
+    {
+      "external_id": "MX-1003",
+      "title": "Globalink research award — interaction design",
+      "description": "Research award placement in interaction design.",
+      "areas": ["Human-Computer Interaction"],
+      "authoritative_url": "https://mitacs.example/opportunities/MX-1003",
+      "closes": "2027-03-15"
+    },
+    {
+      "external_id": "MX-1004",
+      "title": "Accelerate internship — data pipeline engineering",
+      "description": "Funded internship building ingestion pipelines.",
+      "areas": ["Software Engineering", "Data Science"],
+      "authoritative_url": "https://mitacs.example/opportunities/MX-1004",
+      "closes": "2027-02-15"
+    }
+  ]
+}

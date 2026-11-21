@@ -1,0 +1,43 @@
+{
+  "fixture_version": "r4-v1",
+  "scenario": "v1 is last week's successful sync. v2 is this week's. Classify v2 against v1.",
+  "new_external_ids": ["MX-1005"],
+  "unchanged_external_ids": ["MX-1001", "MX-1004"],
+  "changed_external_ids": ["MX-1002"],
+  "not_seen_external_ids": ["MX-1003"],
+  "malformed_record_count": 1,
+  "malformed_reason": "empty external_id and empty title; also an unparseable closes date",
+  "changed_fields": {
+    "MX-1002": ["title", "description", "areas", "closes"]
+  },
+  "untrusted_content_external_id": "MX-1005",
+  "untrusted_content_expectations": [
+    "MX-1005 is stored as an ordinary external opportunity from mitacs-demo",
+    "its description is rendered as text, never as markup or script",
+    "it remains labelled as externally owned despite the text asking otherwise",
+    "no student becomes eligible or approved, and no faculty capability is granted",
+    "its authoritative_url still points at the provider"
+  ],
+  "failed_sync_expectations": [
+    "no external opportunity is deleted",
+    "no external opportunity is emptied or blanked",
+    "nothing is marked not-seen, because a failed run is not a successful sync",
+    "last-known content and the last successful sync time remain available"
+  ],
+  "repeat_sync_expectations": [
+    "running v2 twice creates no duplicate external opportunities",
+    "the second run classifies MX-1001, MX-1002, MX-1004 and MX-1005 as unchanged",
+    "MX-1003 remains not-seen rather than being reported as newly disappeared again"
+  ],
+  "local_fields_preserved_through_change": [
+    "faculty interest recorded on MX-1002 before the change survives it",
+    "local student association survives",
+    "local outcome history survives",
+    "local readiness guidance survives"
+  ],
+  "notes": [
+    "MX-1003 disappears from the feed. It must be marked not-seen with last-known content retained, NOT deleted (R4-10).",
+    "The malformed record must be reported and skipped without failing the run (R4-12).",
+    "MX-1005 is the record that tests R4-07; it is also the newest record, so a team that skips untrusted handling will surface its text prominently."
+  ]
+}

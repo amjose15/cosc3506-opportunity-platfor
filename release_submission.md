@@ -1,43 +1,52 @@
-# Project 2 — Release 3 Submission
+Chosen challenge: R4-20 — Interest survives synchronisation
+
+# Project 2 — Release 4 Submission
+
 - **Team:** team-06
-- **Declared Project Option:** Registry and Pathway Platform
-- **Repository URL:** https://github.com/amjose15/cosc3506-opportunity-platfor
+- **Project:** Opportunity Registry and Pathway Platform
+- **Repository:** https://github.com/amjose15/cosc3506-opportunity-platfor
+
 ## Assessed release
-- **Release tag:** `R3-submission`
-- **Full commit SHA:** 1c4212d9c7098782864702b112465fa7caea3eb1
-- **Deployed URL:** https://student-academic-history-api-u1zk.onrender.com
-- **Health check:** `/api/r3/health` should return `status: ok` and `release: R3-submission`.
+- **Release tag:** `R4-submission`
+- **Full commit SHA:** Fill in after committing and tagging the final release.
+- **Deployed URL:** https://student-academic-history-api-u1zk.onrender.com (verify after deploying the R4 commit).
+- **Health check:** `/api/r4/health` or `/api/health` returns `status: ok` and `release: R4-submission`.
 
-## Fixture loading and clock
-- Both official files are committed under `data/`: `lifecycle_fixture.json` and `expected_lifecycle_results.json`.
-- The application imports `lifecycle_fixture.json` idempotently during startup after the R1/R2 and R3 schema migrations. It maps fixture faculty/student IDs to synthetic `@algomau.ca` accounts, opportunities to existing `projects`, and matches/outcomes to the R3 tables.
-- `expected_lifecycle_results.json` is acceptance criteria only. The application does not import it as product records; `verify_r3_fixture.py` compares the loaded database state against it.
-- The fixture declares `evaluation_date: 2026-11-06`. `r3_effective_date()` reads that value and lifecycle expiry uses it instead of the host clock. `/api/r3/health` reports the simulated date. If the fixture is absent, the app falls back to the server's current date.
-- Re-run fixture verification from the repository root with `python verify_r3_fixture.py` after the application has initialized its SQLite database.
+## External source and fixtures
+The application uses the supplied synthetic Mitacs demonstration feed. It does not connect to a live Mitacs service and does not collect provider application documents. The three official fixture files are stored in `data/`: `external_source_feed_v1.json`, `external_source_feed_v2.json`, and `expected_sync_results.json`. The expected-results file is acceptance criteria only; it is not imported as opportunity data.
 
-## Evaluator setup
-Demo accounts:
-- Faculty: `f-alex@algomau.ca`, `f-priya@algomau.ca`, `f-jordan@algomau.ca`, `f-mei@algomau.ca`
-  - Unverified faculty: `u-pending@algomau.ca`
-- Fixture students: `s01@algomau.ca`, `s05@algomau.ca`, `s08@algomau.ca`, `s11@algomau.ca`, `s17@algomau.ca` (plus `s02@algomau.ca` for completed-work outcomes).
-- Staff: `admin@algomau.ca`
+## How to run synchronization
+1. Sign in using the synthetic operator account `admin@algomau.ca`.
+2. Send `POST /api/admin/external-sync` with JSON `{"feed":"v1"}` and header `X-Demo-Email: admin@algomau.ca`. This loads last week's feed.
+3. Send the same endpoint with `{"feed":"v2"}` to apply this week's feed.
+4. Run v2 again to verify repeatability; no duplicates should be created.
+5. Browse external records at `GET /api/external-opportunities`.
 
-The demo authentication mode is not production authentication. Use synthetic test accounts only. Sign-in does not use passwords.
+## Failed sync simulation and health
+- Simulate a source failure with `POST /api/admin/external-sync/fail`, JSON `{"reason":"Simulated source unavailable"}`, and the operator header. This records a failed run without changing opportunity data.
+- Operator sync health: `GET /api/admin/external-sync/health` with the operator header. It reports the last successful run and the last failure/reason.
 
-## Required QA setup
-Prepare at least one opportunity in each state: Active, Expired, Withdrawn, Matched, Completed and Archived. Prepare one multi-student proposal where two students confirm independently; one proposal declined; and one withdrawn by faculty. Prepare one outcome confirmed by participating verified faculty with all required public consents, and one outcome awaiting faculty confirmation.
+## Faculty interest (chosen challenge R4-20)
+A verified faculty member can record local support using `POST /api/external-opportunities/{id}/interest` with their `X-Demo-Email` header. Interest is stored separately from source-owned opportunity fields and therefore survives source changes, disappearance, and reappearance. To withdraw interest, use `DELETE` on the same route.
 
-## Routes
-See `evaluation_adapter.json` for match proposal/response/withdrawal, lifecycle, renewal, partner agreement, outcome reporting/confirmation/consent, public showcase, and profile outcome routes.
+## Evaluator accounts
+- Operator: `admin@algomau.ca`
+- Verified faculty: `f-alex@algomau.ca`, `f-priya@algomau.ca`, `f-jordan@algomau.ca`, `f-mei@algomau.ca`
+- Student: `s01@algomau.ca`
+
+The prototype uses the course demo identity header, not institutional authentication.
+
+## External opportunity behavior
+- External records are labelled with their source and link to the provider's authoritative record.
+- The application treats imported descriptions as plain text and escapes them in the browser. Provider content cannot alter local eligibility, approval, roles, or record state.
+- Missing records are marked `not_seen`; last-known content is retained. This differs from an explicit provider withdrawal.
+- A malformed record is reported and skipped while valid records in the feed continue to synchronize.
+- Local faculty interest is separate from source fields. Local student associations, outcome history and readiness guidance are held in separate local fields and are not updated by the feed adapter.
+- Readiness text is guidance only and does not block discovery or provider handoff.
 
 ## Known issues / limitations
-- The demo `X-Demo-Email` identity mechanism is not institution-backed authentication and is suitable only for the course prototype.
-- SQLite is used. Confirm the Render filesystem/database persistence configuration before relying on deployed data across restarts.
-- The R3 API workflows are implemented; evaluator workflows can be exercised through the documented API routes. Some administrative lifecycle and outcome operations may require API tooling rather than complete guided frontend forms.
-- Full end-to-end R1/R2 regression testing and deployed QA remain required before claiming all cumulative requirements pass.
-
-## Freeze evidence
-
-* Tag: `R3-submission`
-* Commit SHA: `1c4212d9c7098782864702b112465fa7caea3eb1`
-* QA issues and fixes: R3 health endpoint returned 200 OK; admin project inventory and matching endpoints returned 200 OK; lifecycle fixture states and outcome eligibility were verified through Swagger.
+- The provider feed is synthetic; there is no live Mitacs integration.
+- Demo sign-in is not production authentication.
+- SQLite persistence depends on the Render filesystem configuration.
+- The frontend exposes external opportunity discovery and faculty interest. Operator synchronization and health are available through the documented API routes.
+- Run the supplied R1–R3 regression verification and the R4 checks before final freeze.

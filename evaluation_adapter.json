@@ -1,5 +1,5 @@
 {
-  "release": "R3-submission",
+  "release": "R4-submission",
   "release_question": "Can the platform record two-sided faculty-student intent, manage opportunity term lifecycle, and preserve consent-controlled completed outcomes?",
   "public_intake": {
     "path": "/",
@@ -134,5 +134,29 @@
       "release": "R3-submission",
       "evaluation_date": "2026-11-06"
     }
+  },
+  "release_4": {
+    "chosen_challenge": "R4-20 \u2014 Interest survives synchronisation",
+    "external_opportunities": "GET /api/external-opportunities",
+    "sync_trigger": "POST /api/admin/external-sync with {\"feed\":\"v1\"} then {\"feed\":\"v2\"}; X-Demo-Email: admin@algomau.ca",
+    "failed_sync_simulation": "POST /api/admin/external-sync/fail with {\"reason\":\"Simulated source unavailable\"}",
+    "sync_health": "GET /api/admin/external-sync/health; operator header required",
+    "faculty_interest_add": "POST /api/external-opportunities/{id}/interest; verified faculty header required",
+    "faculty_interest_withdraw": "DELETE /api/external-opportunities/{id}/interest; verified faculty header required",
+    "change_history": "GET /api/external-opportunities/{id}/changes; signed-in Algoma user required",
+    "health": "GET /api/r4/health",
+    "operator_account": "admin@algomau.ca",
+    "verified_faculty_accounts": [
+      "f-alex@algomau.ca",
+      "f-priya@algomau.ca",
+      "f-jordan@algomau.ca",
+      "f-mei@algomau.ca"
+    ],
+    "student_account": "s01@algomau.ca",
+    "fixtures": [
+      "data/external_source_feed_v1.json",
+      "data/external_source_feed_v2.json",
+      "data/expected_sync_results.json"
+    ]
   }
 }

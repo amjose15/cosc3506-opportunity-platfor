@@ -72,3 +72,10 @@ Key API surfaces:
 
 Match confirmation records intent to collaborate only. It does not constitute academic
 eligibility, course registration, credit or university approval.
+
+
+## Release 4 — External opportunities
+
+Release 4 adds a provider-neutral external opportunity store, synthetic feed synchronization, change/disappearance tracking, faculty interest, operator sync health, and a student-facing external opportunity view. See `release_submission.md` for evaluator routes and steps.
+
+Run the Release 4 fixture check from the repository root with `python verify_r4_fixture.py`. It uses a temporary SQLite database and does not overwrite the deployed/local application database. The Release 3 regression check remains `python verify_r3_fixture.py`.

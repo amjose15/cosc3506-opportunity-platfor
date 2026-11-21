@@ -8,9 +8,10 @@ Chosen challenge: R4-20 — Interest survives synchronisation
 
 ## Assessed release
 - **Release tag:** `R4-submission`
-- **Full commit SHA:** Fill in after committing and tagging the final release.
-- **Deployed URL:** https://student-academic-history-api-u1zk.onrender.com (verify after deploying the R4 commit).
-- **Health check:** `/api/r4/health` or `/api/health` returns `status: ok` and `release: R4-submission`.
+- **Branch:** `release4`
+- **Full commit SHA:** `a3066e69747a226527a5ed40e6af1d911e7b026e`
+- **Deployed URL:** https://cosc3506-opportunity-platfor-4.onrender.com
+- **Health check:** `/api/r4/health` returns `{"status":"ok","release":"R4-submission"}`.
 
 ## External source and fixtures
 The application uses the supplied synthetic Mitacs demonstration feed. It does not connect to a live Mitacs service and does not collect provider application documents. The three official fixture files are stored in `data/`: `external_source_feed_v1.json`, `external_source_feed_v2.json`, and `expected_sync_results.json`. The expected-results file is acceptance criteria only; it is not imported as opportunity data.
@@ -49,4 +50,11 @@ The prototype uses the course demo identity header, not institutional authentica
 - Demo sign-in is not production authentication.
 - SQLite persistence depends on the Render filesystem configuration.
 - The frontend exposes external opportunity discovery and faculty interest. Operator synchronization and health are available through the documented API routes.
-- Run the supplied R1–R3 regression verification and the R4 checks before final freeze.
+- Full cumulative R1–R3 regression testing and independent R4 workflow verification remain to be completed. The deployed R4 health endpoint has been checked successfully.
+## Freeze evidence
+- **Release tag:** `R4-submission`
+- **Full commit SHA:** `a3066e69747a226527a5ed40e6af1d911e7b026e`
+- **Branch:** `release4`
+- **Deployment:** https://cosc3506-opportunity-platfor-4.onrender.com
+- **Health check:** `/api/r4/health` returned `{"status":"ok","release":"R4-submission"}`.
+- 

@@ -158,5 +158,15 @@
       "data/external_source_feed_v2.json",
       "data/expected_sync_results.json"
     ]
+  },
+  "final_release_candidate": {
+    "unified_student_discovery": "GET /api/discovery-opportunities",
+    "response_shape": "{opportunities: [...]}",
+    "record_types": [
+      "local",
+      "external"
+    ],
+    "external_attribution": "External records set externally_owned=true and include source_label/source_type; provider application links remain authoritative.",
+    "r4_02_repair": "The Discover Industry Opportunities student journey now uses the unified discovery endpoint to display supervised local opportunities and normalized external-source records together."
   }
 }

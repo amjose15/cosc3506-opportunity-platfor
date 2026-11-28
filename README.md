@@ -79,3 +79,16 @@ eligibility, course registration, credit or university approval.
 Release 4 adds a provider-neutral external opportunity store, synthetic feed synchronization, change/disappearance tracking, faculty interest, operator sync health, and a student-facing external opportunity view. See `release_submission.md` for evaluator routes and steps.
 
 Run the Release 4 fixture check from the repository root with `python verify_r4_fixture.py`. It uses a temporary SQLite database and does not overwrite the deployed/local application database. The Release 3 regression check remains `python verify_r3_fixture.py`.
+
+
+## Final Release candidate — unified discovery (R4-02 repair)
+
+The student-facing **Discover Industry Opportunities** journey now reads from
+`GET /api/discovery-opportunities`. This response combines faculty-supervised
+local industry opportunities with normalized external-source opportunities.
+Each record identifies its type; external records set `externally_owned=true`
+and include `source_label` so students can distinguish provider-owned content.
+External application links continue to point to the authoritative provider page.
+
+Run `python verify_unified_discovery.py` from the repository root to verify that
+a local opportunity and an external fixture opportunity appear in the same feed.

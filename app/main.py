@@ -2119,6 +2119,49 @@ def r4_list_external_opportunities(x_demo_email: str | None = Header(default=Non
     con.close(); return {'opportunities':result}
 
 
+@app.get('/api/discovery-opportunities')
+def r4_unified_discovery(x_demo_email: str | None = Header(default=None)):
+    """One student-facing discovery feed containing supervised local and external records."""
+    con = get_db()
+    user = None
+    if x_demo_email:
+        try:
+            user = current_user(x_demo_email)
+        except HTTPException:
+            user = None
+    can_view_intake = bool(user and (user['verified_faculty'] == 1 or user['role'] == 'admin'))
+
+    local_rows = con.execute("""SELECT io.*, COUNT(iw.faculty_user_id) AS interest_count
+        FROM industry_opportunities io
+        LEFT JOIN industry_willingness iw ON iw.opportunity_id=io.id
+        GROUP BY io.id ORDER BY io.created_at DESC, io.id DESC""").fetchall()
+    combined = []
+    for row in local_rows:
+        if not can_view_intake and row['interest_count'] == 0:
+            continue
+        item = _public_industry_item(con, row, False)
+        item.update({'record_type': 'local', 'externally_owned': False,
+                     'source_label': 'Algoma faculty-supervised opportunity',
+                     'source_type': 'Local opportunity'})
+        combined.append(item)
+
+    external_rows = con.execute("SELECT * FROM external_opportunities ORDER BY id DESC").fetchall()
+    latest = con.execute("SELECT completed_at FROM external_sync_runs WHERE status='success' ORDER BY id DESC LIMIT 1").fetchone()
+    for row in external_rows:
+        item = dict(row)
+        item['areas'] = json.loads(item.pop('areas_json'))
+        item.update({'record_type': 'external', 'externally_owned': True,
+                     'source_label': item.get('source_name') or 'External provider',
+                     'source_type': 'External opportunity',
+                     'apply_action': 'View / apply through provider',
+                     'last_successful_sync': latest['completed_at'] if latest else None})
+        combined.append(item)
+
+    con.close()
+    combined.sort(key=lambda x: (x.get('title') or '').casefold())
+    return {'opportunities': combined}
+
+
 @app.post('/api/admin/external-sync')
 def r4_trigger_sync(payload: dict, x_demo_email: str | None = Header(default=None)):
     r4_require_operator(x_demo_email)

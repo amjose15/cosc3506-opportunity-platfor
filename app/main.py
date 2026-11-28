@@ -1829,7 +1829,7 @@ def r3_admin_projects(x_demo_email: str | None = Header(default=None)):
 
 @app.get('/api/r3/health')
 def r3_health():
-    return {"status": "ok", "release": "R4-submission", "evaluation_date": str(r3_effective_date())}
+    return {"status": "ok", "release": "R3-submission", "evaluation_date": str(r3_effective_date())}
 
 
 # Initialise R3 additive schema after R1/R2 initialization.

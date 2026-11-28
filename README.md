@@ -1,4 +1,4 @@
-# COSC-3506 Project 2 — Release 3
+# COSC-3506 Project 2 — Final Release Candidate
 
 Opportunity Registry and Pathway Platform: faculty/project discovery plus accountless industry intake, faculty willingness, partner-engagement coordination, and area-based in-product notifications.
 
